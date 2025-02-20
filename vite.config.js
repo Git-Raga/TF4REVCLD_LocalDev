@@ -4,6 +4,14 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [
     react(),
-    tailwindcss(),
-  ],
+    tailwindcss(),],
+    define: {
+      'process.env': {}
+    },
+    server: {
+      hmr: {
+        overlay: false
+      },
+      cache: false
+    }
 })
