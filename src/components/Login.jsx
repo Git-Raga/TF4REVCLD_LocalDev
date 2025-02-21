@@ -10,13 +10,14 @@ const Login = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
+    // console.log('Login attempt started for username:', username);
   
     try {
+      // console.log('Sending request to database');
       const response = await databases.listDocuments(
         DATABASE_ID,
         COLLECTIONS.USER_DETAILS,
@@ -25,28 +26,33 @@ const Login = () => {
           Query.equal('password', password)
         ]
       );
+      // console.log('Response received:', response);
   
       if (response.documents.length > 0) {
+        // console.log('User found in database');
         const userData = response.documents[0];
         
-        // Store user data
+        // console.log('Storing user data in localStorage');
         localStorage.setItem('user', JSON.stringify(userData));
         
-        // Store theme preference if exists, or default to dark
         const userThemePreference = userData.theme || 'dark';
+        // console.log('Setting theme preference:', userThemePreference);
         localStorage.setItem('theme', userThemePreference);
         
+        // console.log('Attempting navigation to /landing');
         navigate('/landing');
       } else {
+        // console.log('No matching user found');
         setError('Invalid credentials');
       }
     } catch (error) {
       console.error('Login error details:', error);
       setError(`Authentication failed: ${error.message}`);
     } finally {
+      // console.log('Login process completed');
       setLoading(false);
     }
-  };
+};
   return (
     <div className="min-h-screen flex">
       {/* Left side - Login Form */}

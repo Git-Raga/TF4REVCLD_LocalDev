@@ -1,32 +1,151 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme, ThemeToggle } from './ColorChange';
-import { Home, Grid, FolderOpen, PlusSquare, Users, Layout, BarChart2, Lock, Paintbrush, LogOut, Star, Import } from 'lucide-react';
+import { 
+  Home, 
+  Grid, 
+  FolderOpen, 
+  PlusSquare, 
+  Users, 
+  Layout, 
+  BarChart2, 
+  Lock, 
+  Paintbrush, 
+  LogOut, 
+  Star, 
+  Import,
+  Wrench,
+  CirclePlus 
+} from 'lucide-react';
 import FontConfig from './FontConfig';
-import { useNavigate } from 'react-router-dom'; // Add this import
+import { useNavigate } from 'react-router-dom';
 
-const LandingPage = ({ onLogout }) => {
-  const navigate = useNavigate(); //
-  const files = [
-    { name: 'Dashboard tech requirements', size: '220 KB', type: 'docx', uploadedBy: 'Amelie Laurent', email: 'amelie@untitledui.com' },
-    { name: 'Marketing site requirements', size: '488 KB', type: 'docx', uploadedBy: 'Ammar Foley', email: 'ammar@untitledui.com' },
-    { name: 'Q4_2023 Reporting', size: '1.2 MB', type: 'pdf', uploadedBy: 'Amelie Laurent', email: 'amelie@untitledui.com' },
-    { name: 'Q3_2023 Reporting', size: '1.3 MB', type: 'pdf', uploadedBy: 'Sienna Hewitt', email: 'sienna@untitledui.com' }
-  ];
+// Custom hook for connection setup
+const useConnectionSetup = () => {
+  useEffect(() => {
+    // Setup connection listeners here
+    const setupListeners = () => {
+      // Add your connection setup logic here
+    };
 
+    setupListeners();
+
+    // Cleanup function
+    return () => {
+      // Add any cleanup logic here
+    };
+  }, []);
+};
+
+// Array of Tailwind background color classes
+const bgColors = [
+  'bg-blue-800',
+  'bg-green-800',
+  'bg-red-800',
+  'bg-yellow-800',
+  'bg-purple-800',
+  'bg-pink-800',
+  'bg-indigo-800',
+  'bg-teal-800'
+];
+
+// Array of Tailwind text color classes
+const textColors = [
+  'text-white',
+  'text-gray-100'
+];
+
+// Function to get a fixed color combination
+const getFixedColors = () => {
+  const bgColorIndex = Math.floor(Math.random() * bgColors.length);
+  const textColorIndex = Math.floor(Math.random() * textColors.length);
+  return {
+    backgroundColor: bgColors[bgColorIndex],
+    textColor: textColors[textColorIndex]
+  };
+};
+
+// User Avatar Component
+const UserAvatar = ({ name, initials }) => {
+  const [colorClasses, setColorClasses] = useState({ backgroundColor: '', textColor: '' });
+
+  useEffect(() => {
+    setColorClasses(getFixedColors());
+  }, []);
+
+  return (
+    <div 
+      className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold ${colorClasses.backgroundColor} ${colorClasses.textColor}`}
+    >
+      <span className="text-sm">{initials || 'UN'}</span>
+    </div>
+  );
+};
+
+// NavItem component
+const NavItem = ({ icon, text, active, onClick, theme }) => (
+  <div 
+    className={`flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer ${
+      active ? theme.activeNavItem : theme.navItem
+    }`}
+    onClick={onClick}
+  >
+    <span className={theme.iconColor}>{icon}</span>
+    <span className={theme.navItemText}>{text}</span>
+  </div>
+);
+
+// SubNavItem component
+const SubNavItem = ({ text, theme }) => (
+  <div className={`flex items-center space-x-3 px-3 py-2 pl-11 rounded-lg cursor-pointer ${theme.navItem}`}>
+    <span className={`${theme.navItemText} text-sm`}>{text}</span>
+  </div>
+);
+
+const LandingPage = () => {
+  const navigate = useNavigate();
   const [showSettings, setShowSettings] = useState(false);
   const { currentTheme } = useTheme();
+  const [userData, setUserData] = useState(null);
 
-  const handleSettingsClick = () => {
-    setShowSettings(!showSettings);
-  };
+  // Use the custom hook for connection setup
+  useConnectionSetup();
 
-  const handleLogout = () => {
+  // Load user data from localStorage on component mount
+  useEffect(() => {
+    const loadUserData = () => {
+      try {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          setUserData(JSON.parse(storedUser));
+        }
+      } catch (error) {
+        console.error('Error parsing user data:', error);
+      }
+    };
+
+    // Delay the execution to ensure connection listeners are set up first
+    setTimeout(loadUserData, 0);
+  }, []);
+
+  const handleSettingsClick = useCallback(() => {
+    setShowSettings(prev => !prev);
+  }, []);
+
+  const handlesupportticket = useCallback(() => {
+    try {
+      // Implement support ticket logic
+    } catch (error) {
+      console.error('Support ticket error:', error);
+    }
+  }, []);
+
+  const handleLogout = useCallback(() => {
     // Clear user authentication
     localStorage.removeItem('user');
     
     // Navigate to login
     navigate('/login');
-  };
+  }, [navigate]);
 
   return (
     <div className={`flex h-screen ${currentTheme.background}`}>
@@ -34,18 +153,22 @@ const LandingPage = ({ onLogout }) => {
       <div className={`w-64 ${currentTheme.sidebar} border-r ${currentTheme.borderColor} p-4`}>
         {/* User Profile */}
         <div className="flex items-center space-x-3 mb-8">
-          <img
-            src="https://i.pravatar.cc/40"
-            alt="Profile"
-            className="w-10 h-10 rounded-full"
+          <UserAvatar 
+            name={userData?.username || userData?.useremail || 'Unknown User'}
+            initials={userData?.initials}
           />
           <div>
-            <h3 className={`${currentTheme.text} text-sm font-medium`}>Adriana O'Sullivan</h3>
-            <p className={`${currentTheme.mutedText} text-sm`}>adriana@untitledui.com</p>
+            <h3 className={`${currentTheme.text} text-sm font-medium`}>
+              {userData?.username || userData?.useremail || 'User'}
+            </h3>
+            <p className={`${currentTheme.mutedText} text-sm`}>
+              {userData?.role || 'No Role Assigned'}
+            </p>
           </div>
         </div>
+        
         {/* Divider line */}
-        <div className={`h-[1px] ${currentTheme.divider} mb-4`}></div>
+        <div className={`h-[1px] ${currentTheme.divider} mb-2`}></div>
         {/* Theme Toggle */}
         <div className="mb-4">
           <ThemeToggle />
@@ -54,6 +177,7 @@ const LandingPage = ({ onLogout }) => {
         {/* Navigation */}
         <nav className="space-y-1">
           <NavItem icon={<Home size={20} />} text="Home" theme={currentTheme} />
+          <NavItem icon={<CirclePlus size={20} />} text="New Task" theme={currentTheme} />
           <NavItem icon={<BarChart2 size={20} />} text="Dashboard" theme={currentTheme} />
           <NavItem icon={<Star size={20} />} text=" Perfect ⭐ " theme={currentTheme} />
           
@@ -69,6 +193,13 @@ const LandingPage = ({ onLogout }) => {
               <SubNavItem text=" 🔑 Change Password" theme={currentTheme} />
             )}
             <NavItem 
+              icon={<Wrench size={20} />} 
+              text="Tech Support" 
+              onClick={handlesupportticket} 
+              theme={currentTheme} 
+            />
+
+            <NavItem 
               icon={<LogOut size={20} />} 
               text="Logout" 
               onClick={handleLogout} 
@@ -78,102 +209,28 @@ const LandingPage = ({ onLogout }) => {
         </nav>
       </div>
 
-      {/* Main Content */}
-      <div className={`flex-1 ${currentTheme.background}`}>
-        <div className="p-8">
-          <h1 className={`text-2xl font-semibold ${currentTheme.text} mb-8`}>Project files</h1>
+      
+      
+<div className={`flex-1 ${currentTheme.background} p-3 `}>
+  <div className="text-center m-2.5 ">
+    <h1 className={`text-3xl font-semibold ${currentTheme.text} `}>
+      TaskForce <span className="inline-block animate-pulse">⚡</span>
+    </h1>
+    <p className={`text-sm ${currentTheme.mutedText}`}>
+      Every TASK, brings you the opportunity to LEARN and ESTABLISH something...
+    </p>
+    
+  </div>
+   {/* Divider line */}
+ <div className={`h-[1px] ${currentTheme.divider} `}></div>
+  
+</div>
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-3 gap-4 mb-8">
-            <QuickActionCard icon={<PlusSquare size={24} />} title="New document" theme={currentTheme} />
-            <QuickActionCard icon={<Grid size={24} />} title="New spreadsheet" theme={currentTheme} />
-            <QuickActionCard icon={<FolderOpen size={24} />} title="New project" theme={currentTheme} />
-          </div>
 
-          {/* Recently Modified Section */}
-          <div className="mb-8">
-            <h2 className={`${currentTheme.text} text-lg font-medium mb-4`}>Recently modified</h2>
-            <div className="grid grid-cols-3 gap-4">
-              {files.slice(0, 3).map((file, index) => (
-                <FileCard key={index} file={file} theme={currentTheme} />
-              ))}
-            </div>
-          </div>
 
-          {/* All Files Section */}
-          <div>
-            <h2 className={`${currentTheme.text} text-lg font-medium mb-4`}>All files</h2>
-            <div className={`${currentTheme.cardBackground} rounded-lg overflow-hidden`}>
-              <div className={`flex items-center ${currentTheme.mutedText} text-sm px-4 py-2 border-b ${currentTheme.borderColor}`}>
-                <div className="w-8"></div>
-                <div className="flex-1">File name</div>
-                <div className="w-32 text-right">Uploaded by</div>
-              </div>
-              {files.map((file, index) => (
-                <FileListItem key={index} file={file} theme={currentTheme} />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+
+</div>
   );
 };
- 
-const NavItem = ({ icon, text, active, onClick, theme }) => (
-  <div 
-    className={`flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer ${
-      active ? theme.activeNavItem : theme.navItem
-    }`}
-    onClick={onClick}
-  >
-    <span className={theme.iconColor}>{icon}</span>
-    <span className={theme.navItemText}>{text}</span>
-  </div>
-);
-
-const SubNavItem = ({ text, theme }) => (
-  <div className={`flex items-center space-x-3 px-3 py-2 pl-11 rounded-lg cursor-pointer ${theme.navItem}`}>
-    <span className={`${theme.navItemText} text-sm`}>{text}</span>
-  </div>
-);
-
-const QuickActionCard = ({ icon, title, theme }) => (
-  <div className={`${theme.cardBackground} p-4 rounded-lg cursor-pointer ${theme.hoverBackground} transition-colors`}>
-    <div className="flex items-center space-x-3">
-      <span className={theme.iconColor}>{icon}</span>
-      <span className={theme.text}>{title}</span>
-    </div>
-  </div>
-);
-
-const FileCard = ({ file, theme }) => (
-  <div className={`${theme.cardBackground} p-4 rounded-lg`}>
-    <div className="flex items-center space-x-3 mb-2">
-      <FolderOpen size={20} className={theme.iconColor} />
-      <span className={`${theme.text} text-sm`}>{file.name}</span>
-    </div>
-    <div className={`${theme.mutedText} text-sm`}>{file.size} • {file.type}</div>
-  </div>
-);
-
-const FileListItem = ({ file, theme }) => (
-  <div className={`flex items-center px-4 py-3 ${theme.hoverBackground} transition-colors`}>
-    <div className="w-8">
-      <FolderOpen size={20} className={theme.iconColor} />
-    </div>
-    <div className="flex-1">
-      <div className={`${theme.text} text-sm`}>{file.name}</div>
-      <div className={`${theme.mutedText} text-sm`}>{file.size} • {file.type}</div>
-    </div>
-    <div className="w-32 flex items-center space-x-2">
-      <img src="https://i.pravatar.cc/24" alt="Avatar" className="w-6 h-6 rounded-full" />
-      <div className="text-right">
-        <div className={`${theme.text} text-sm`}>{file.uploadedBy}</div>
-        <div className={`${theme.mutedText} text-xs`}>{file.email}</div>
-      </div>
-    </div>
-  </div>
-);
 
 export default LandingPage;

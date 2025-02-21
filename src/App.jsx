@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react'; 
+import React, { useEffect, useState, useCallback } from 'react'; 
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './components/ColorChange';
 import Login from './components/Login';
 import LandingPage from './components/LandingPage';
 import FontConfig from './components/FontConfig';
 
+// Error Boundary Component
 class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -36,64 +37,76 @@ class ErrorBoundary extends React.Component {
 }
 
 function App() {
-  // Check if user is authenticated
-  const isAuthenticated = !!localStorage.getItem('user');
- 
-  useEffect(() => {
-    // Disable browser caching in development
-    if (process.env.NODE_ENV === 'development') {
-      // Disable caching strategies
-      window.addEventListener('beforeunload', (e) => {
-        e.preventDefault();
-        e.returnValue = '';
-      });
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return !!localStorage.getItem('user');
+  });
 
-      // Add no-cache headers
-      const meta1 = document.createElement('meta');
-      meta1.httpEquiv = 'Cache-Control';
-      meta1.content = 'no-cache, no-store, must-revalidate';
-      document.head.appendChild(meta1);
+  const initializeApp = useCallback(() => {
+    try {
+      // First-time app initialization
+      if (!localStorage.getItem('appInitialized')) {
+        localStorage.clear();
+        sessionStorage.clear();
+        localStorage.setItem('appInitialized', 'true');
+        localStorage.setItem('theme', 'dark');
+      }
 
-      const meta2 = document.createElement('meta');
-      meta2.httpEquiv = 'Pragma';
-      meta2.content = 'no-cache';
-      document.head.appendChild(meta2);
-
-      const meta3 = document.createElement('meta');
-      meta3.httpEquiv = 'Expires';
-      meta3.content = '0';
-      document.head.appendChild(meta3);
-    }
-
-    // Optional: Clear cache on initial load
-    if (!localStorage.getItem('appInitialized')) {
-      localStorage.clear();
-      sessionStorage.clear();
-      localStorage.setItem('appInitialized', 'true');
+      // Sync authentication state
+      const userData = localStorage.getItem('user');
+      setIsAuthenticated(!!userData);
+    } catch (error) {
+      console.error('App initialization error:', error);
     }
   }, []);
+
+  useEffect(() => {
+    // Initialize app
+    initializeApp();
+
+    // Listen for storage changes
+    const handleStorageChange = (event) => {
+      if (event.key === 'user') {
+        setIsAuthenticated(!!event.newValue);
+      }
+    };
+
+    // Add error event listener
+    const handleError = (event) => {
+      console.error('Uncaught error:', event.error);
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('error', handleError);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('error', handleError);
+    };
+  }, [initializeApp]);
 
   return (
     <ErrorBoundary>
       <ThemeProvider>
         <FontConfig>
           <Routes>
-            {/* Default route */}
             <Route 
               path="/" 
               element={isAuthenticated ? <Navigate to="/landing" replace /> : <Navigate to="/login" replace />} 
             />
             
-            {/* Login Route */}
             <Route path="/login" element={<Login />} />
             
-            {/* Landing Page Route */}
             <Route 
-              path="/landing" 
-              element={isAuthenticated ? <LandingPage /> : <Navigate to="/login" replace />} 
-            />
+  path="/landing" 
+  element={
+    (() => {
+      
+      return isAuthenticated ? <LandingPage /> : <Navigate to="/login" replace />;
+    })()
+  }
+/>
             
-            {/* Catch-all route */}
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
         </FontConfig>
