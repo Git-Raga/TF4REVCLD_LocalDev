@@ -312,15 +312,25 @@ const SupportContent = ({ theme }) => (
   </div>
 );
 
-const LogoutContent = ({ theme }) => (
+const LogoutContent = ({ theme, onConfirm, onCancel }) => (
   <div className={`p-6 ${theme.text}`}>
     <h2 className="text-2xl font-bold mb-4">Logout</h2>
     <p className="mb-4">Are you sure you want to logout?</p>
     <div className={`p-4 rounded-lg ${theme.cardBg}`}>
       <p className="mb-4">You will be redirected to the login page.</p>
       <div className="flex space-x-4">
-        <button className={`px-4 py-2 rounded ${theme.buttonBg} text-white`}>Confirm Logout</button>
-        <button className={`px-4 py-2 rounded bg-gray-500 text-white`}>Cancel</button>
+        <button 
+          className="px-6 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+          onClick={onConfirm}
+        >
+          Confirm Logout
+        </button>
+        <button 
+          className="px-6 py-2 rounded bg-gray-500 text-white hover:bg-gray-600 transition-colors"
+          onClick={onCancel}
+        >
+          Cancel
+        </button>
       </div>
     </div>
   </div>
@@ -386,12 +396,12 @@ const LandingPage = () => {
 
   const handleLogout = useCallback(() => {
     setActiveNavItem('Logout');
-    // Clear user authentication
-    // localStorage.removeItem('user');
-    
-    // Navigate to login
-    // navigate('/login');
   }, []);
+
+  
+
+
+
 
   // Render the appropriate content based on the active nav item
   const renderContent = () => {
@@ -412,8 +422,22 @@ const LandingPage = () => {
         return <PasswordContent theme={theme} />;
       case 'Tech Support':
         return <SupportContent theme={theme} />;
-      case 'Logout':
-        return <LogoutContent theme={theme} />;
+        case 'Logout':
+          return (
+            <LogoutContent 
+              theme={theme} 
+              onConfirm={() => {
+                // Clear user authentication data
+                localStorage.removeItem('user');
+                // Navigate to login page
+                navigate('/login');
+              }}
+              onCancel={() => {
+                // Return to home page
+                setActiveNavItem('Home');
+              }}
+            />
+          );
       default:
         return <HomeContent theme={theme} />;
     }
