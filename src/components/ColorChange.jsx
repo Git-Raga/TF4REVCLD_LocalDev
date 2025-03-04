@@ -1,17 +1,21 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 // Create a context for the theme
-export const ThemeContext = createContext();
+const ThemeContext = createContext();
 
 // Theme provider component
-export const ThemeProvider = ({ children }) => {
+const ThemeProvider = ({ children }) => {
   // Tailwind-friendly theme classes
   const themeClasses = {
     dark: {
+      // Add name property
+      name: 'dark',
+      
       // Background colors
       background: 'bg-[#1C1C1F]',
       sidebar: 'bg-[#2C2C30]',
       cardBackground: 'bg-[#2C2C30]',
+      card: 'bg-[#2C2C30]', // Added for compatibility
       
       // Text colors
       text: 'text-white',
@@ -29,6 +33,9 @@ export const ThemeProvider = ({ children }) => {
       // Icon colors
       iconColor: 'text-gray-400',
       
+      // Input fields
+      input: 'bg-gray-700', // Added for compatibility
+      
       // Hover and interactive states
       hoverBackground: 'hover:bg-gray-700',
       
@@ -40,10 +47,14 @@ export const ThemeProvider = ({ children }) => {
       }
     },
     light: {
+      // Add name property
+      name: 'light',
+      
       // Background colors
       background: 'bg-white',
       sidebar: 'bg-gray-100',
       cardBackground: 'bg-white',
+      card: 'bg-white', // Added for compatibility
       
       // Text colors
       text: 'text-gray-900',
@@ -60,6 +71,9 @@ export const ThemeProvider = ({ children }) => {
       
       // Icon colors
       iconColor: 'text-gray-600',
+      
+      // Input fields
+      input: 'bg-white', // Added for compatibility
       
       // Hover and interactive states
       hoverBackground: 'hover:bg-gray-100',
@@ -114,26 +128,8 @@ export const ThemeProvider = ({ children }) => {
   );
 };
 
-// Theme toggle button component
-export const ThemeToggle = () => {
-  const { isDarkTheme, toggleTheme, currentTheme } = useContext(ThemeContext);
-
-  return (
-    <button
-      onClick={toggleTheme}
-      className={`${currentTheme.themeToggle.base} ${
-        isDarkTheme 
-          ? currentTheme.themeToggle.dark 
-          : currentTheme.themeToggle.light
-      }`}
-    >
-      {isDarkTheme ? '⚪' : '⚫'}
-    </button>
-  );
-};
-
 // Custom hook to use theme
-export const useTheme = () => {
+const useTheme = () => {
   const context = useContext(ThemeContext);
   if (!context) {
     throw new Error('useTheme must be used within a ThemeProvider');
@@ -141,4 +137,6 @@ export const useTheme = () => {
   return context;
 };
 
+// Export only the ThemeProvider and useTheme hook
+export { ThemeProvider, useTheme, ThemeContext };
 export default ThemeProvider;
