@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from './ColorChange';  // Keep this import
+import NewTask from './NewTask'
 import { 
   Home, 
   Grid, 
@@ -123,18 +124,29 @@ const UserAvatar = ({ name, initials }) => {
   );
 };
 
+
+
 // NavItem component
-const NavItem = ({ icon, text, active, onClick, theme }) => (
-  <div 
-    className={`flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer ${
-      active ? theme.activeNavItem : theme.navItem
-    }`}
-    onClick={onClick}
-  >
-    <span className={theme.iconColor}>{icon}</span>
-    <span className={theme.navItemText}>{text}</span>
-  </div>
-);
+const NavItem = ({ icon, text, active, onClick, theme }) => {
+  // Get the color based on active state
+  const textColorClass = active ? theme.activeNavItemText : theme.navItemText;
+  
+  return (
+    <div 
+      className={`flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer ${
+        active ? theme.activeNavItem : theme.navItem
+      }`}
+      onClick={onClick}
+    >
+      {/* Clone the icon element and pass the appropriate color */}
+      {React.cloneElement(icon, { 
+        className: textColorClass,
+        color: active ? (theme.name === 'dark' ? 'black' : 'white') : (theme.name === 'dark' ? '#9CA3AF' : '#4B5563')
+      })}
+      <span className={textColorClass}>{text}</span>
+    </div>
+  );
+};
 
 // SubNavItem component
 const SubNavItem = ({ text, theme, onClick }) => (
@@ -191,23 +203,6 @@ const TaskFlowContent = ({ theme }) => {
 };
 
 
-const NewTaskContent = ({ theme }) => (
-  <div className={`p-6 ${theme.text}`}>
-    <h2 className="text-2xl font-bold mb-4">Create New Task</h2>
-    <p className="mb-4">Use this form to create a new task for your project.</p>
-    <div className={`p-4 rounded-lg ${theme.cardBg}`}>
-      <div className="mb-4">
-        <label className="block mb-2">Task Title</label>
-        <input type="text" className={`w-full p-2 rounded ${theme.inputBg} ${theme.borderColor}`} placeholder="Enter task title" />
-      </div>
-      <div className="mb-4">
-        <label className="block mb-2">Description</label>
-        <textarea className={`w-full p-2 rounded ${theme.inputBg} ${theme.borderColor}`} rows="3" placeholder="Enter task description"></textarea>
-      </div>
-      <button className={`px-4 py-2 rounded ${theme.buttonBg} text-white`}>Create Task</button>
-    </div>
-  </div>
-);
 
 const DashboardContent = ({ theme }) => (
   <div className={`p-6 ${theme.text}`}>
@@ -339,7 +334,8 @@ const LogoutContent = ({ theme, onConfirm, onCancel }) => (
 const LandingPage = () => {
   const navigate = useNavigate();
   const [showSettings, setShowSettings] = useState(false);
-  const { currentTheme } = useTheme();
+  // FIX: Correct destructuring of useTheme hook
+  const { currentTheme, isDarkTheme, toggleTheme } = useTheme();
   const [userData, setUserData] = useState(null);
   const [activeNavItem, setActiveNavItem] = useState('Home');
 
@@ -398,18 +394,13 @@ const LandingPage = () => {
     setActiveNavItem('Logout');
   }, []);
 
-  
-
-
-
-
   // Render the appropriate content based on the active nav item
   const renderContent = () => {
     switch (activeNavItem) {
       case 'Home':
         return <HomeContent theme={theme} />;
       case 'New Task':
-        return <NewTaskContent theme={theme} />;
+        return <NewTask theme={theme} />;
       case 'Task Flow':
         return <TaskFlowContent theme={theme} />;
       case 'Dashboard':
@@ -575,11 +566,6 @@ const LandingPage = () => {
     </div>
   </div>
 </div>
-
-
-
-
-
 
         </div>
       </div>
