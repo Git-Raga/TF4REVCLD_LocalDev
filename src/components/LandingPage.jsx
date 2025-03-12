@@ -590,21 +590,32 @@ const LandingPage = () => {
     </div>
     
 {/* RevCLD Logo in the top right corner */}
-<div className="flex items-center">
-  <div className={`
-    p-1 rounded-xl
-    ${currentTheme.name === 'dark' ? 'border border-2 border-white' : 'border border-2 border-gray-900'}
-  `}>
-    <img 
-      src="/src/assets/revcld.png" 
-      alt="RevCLD Logo" 
-      className="h-10 w-auto rounded-lg" 
-      onError={(e) => {
-        console.error('RevCLD logo load error');
-      }}
-    />
-  </div>
+<>
+<div className={`
+  p-1 rounded-xl flex items-center space-x-2
+  ${currentTheme.name === 'dark' ? 'border   border-white' : 'border   border-gray-900'}
+`}>
+  <img
+    src="/src/assets/sficon.png"
+    alt="Salesforce Logo"
+    className="h-8 w-10 rounded-lg"
+    onError={(e) => {
+      console.error('Salesforce logo load error');
+    }}
+  />
+  
+  <img
+    src="/src/assets/revcld.png"
+    alt="RevCLD Logo"
+    className="h-8 w-10 rounded-lg"
+    onError={(e) => {
+      console.error('RevCLD logo load error');
+    }}
+  />
 </div>
+  </>
+
+ 
 </div>
         
         {/* Dynamic Display Area */}
