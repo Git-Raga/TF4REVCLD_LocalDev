@@ -1,9 +1,231 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Query, ID } from "appwrite";
-import { format } from "date-fns";
-import { PlusSquare, UserCheck } from "lucide-react";
+import { format, isToday, isBefore, addDays } from "date-fns";
+import { PlusSquare, UserCheck, Search, X, Calendar } from "lucide-react";
 import { useTheme } from "./ColorChange"; // Import useTheme hook
 import { databases, DATABASE_ID, COLLECTIONS } from "../appwrite/config";
+
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css"; // Base styles
+
+// Custom header component for the date picker to match your theme
+const CustomHeader = ({ 
+  date, 
+  decreaseMonth, 
+  increaseMonth, 
+  prevMonthButtonDisabled, 
+  nextMonthButtonDisabled,
+  theme
+}) => {
+  const textColor = theme.name === "dark" ? "#ffffff" : "#000000";
+  const bgColor = theme.name === "dark" ? "#374151" : "#ffffff";
+  
+  const handleDecrease = (e) => {
+    e.preventDefault(); // Prevent form submission
+    decreaseMonth();
+  };
+  
+  const handleIncrease = (e) => {
+    e.preventDefault(); // Prevent form submission
+    increaseMonth();
+  };
+  
+  return (
+    <div
+      style={{
+        margin: "10px 0",
+        display: "flex",
+        justifyContent: "space-between",
+        fontFamily: "'Titillium Web', sans-serif",
+        color: textColor,
+        backgroundColor: bgColor
+      }}
+    >
+      <button
+        onClick={handleDecrease}
+        disabled={prevMonthButtonDisabled}
+        style={{ color: textColor }}
+        type="button" // Prevent form submission
+      >
+        {"<"}
+      </button>
+      <div style={{ 
+        fontWeight: "bold", 
+        color: textColor,
+        fontSize: "1.1rem" // Increased font size
+      }}>
+        {format(date, "MMMM yyyy")}
+      </div>
+      <button
+        onClick={handleIncrease}
+        disabled={nextMonthButtonDisabled}
+        style={{ color: textColor }}
+        type="button" // Prevent form submission
+      >
+        {">"}
+      </button>
+    </div>
+  );
+};
+
+
+// Searchable dropdown component
+const SearchableDropdown = ({ options, value, onChange, loading, theme }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const selectedOption = options.find(opt => opt.id === value);
+  const dropdownRef = useRef(null);
+  const inputRef = useRef(null);
+
+  // Filter options based on search term
+  const filteredOptions = options.filter(option => 
+    option.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Focus input when dropdown opens
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen]);
+
+  // Determine colors based on theme
+  const dropdownBg = theme.name === "dark" ? "#2D3748" : "#ffffff";
+  const dropdownTextColor = theme.name === "dark" ? "#ffffff" : "#000000";
+  const dropdownBorder = theme.name === "dark" ? "2px solid #4299e1" : "1px solid #E5E7EB";
+  const optionsBg = theme.name === "dark" ? "#374151" : "#f9fafb";
+  const optionsHoverBg = theme.name === "dark" ? "#4B5563" : "#f3f4f6";
+  const placeholderColor = theme.name === "dark" ? "#9CA3AF" : "#6B7280";
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      {/* Dropdown trigger */}
+      <div
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex justify-between items-center w-full px-4 py-3 rounded-lg cursor-pointer"
+        style={{
+          backgroundColor: dropdownBg,
+          color: dropdownTextColor,
+          border: dropdownBorder,
+          fontFamily: "'Titillium Web', sans-serif"
+        }}
+      >
+        <span>{selectedOption ? selectedOption.name : "Select Owner"}</span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          className={`w-5 h-5 transition-transform ${isOpen ? 'transform rotate-180' : ''}`}
+        >
+          <path
+            fillRule="evenodd"
+            d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </div>
+      
+      {/* Dropdown menu */}
+      {isOpen && (
+        <div 
+          className="absolute z-50 w-full mt-1 shadow-lg rounded-md overflow-hidden"
+          style={{ backgroundColor: optionsBg }}
+        >
+          {/* Search input */}
+          <div className="p-2 border-b" style={{ borderColor: theme.name === "dark" ? "#4B5563" : "#E5E7EB" }}>
+            <div className="relative">
+              <input
+                ref={inputRef}
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search..."
+                className="w-full pl-8 pr-8 py-2 rounded"
+                style={{
+                  backgroundColor: theme.name === "dark" ? "#1F2937" : "#ffffff",
+                  color: dropdownTextColor,
+                  border: theme.name === "dark" ? "1px solid #4B5563" : "1px solid #E5E7EB",
+                  fontFamily: "'Titillium Web', sans-serif"
+                }}
+              />
+              <Search className="absolute left-2 top-2.5" size={16} color={placeholderColor} />
+              {searchTerm && (
+                <X 
+                  className="absolute right-2 top-2.5 cursor-pointer" 
+                  size={16} 
+                  color={placeholderColor} 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSearchTerm("");
+                  }}
+                />
+              )}
+            </div>
+          </div>
+          
+          {/* Options list */}
+          <div className="max-h-60 overflow-y-auto">
+            {filteredOptions.length === 0 ? (
+              <div 
+                className="px-4 py-2 text-center"
+                style={{ color: placeholderColor }}
+              >
+                No matches found
+              </div>
+            ) : (
+              filteredOptions.map(option => (
+                <div
+                  key={option.id}
+                  className="px-4 py-2 cursor-pointer hover:bg-gray-600"
+                  style={{ 
+                    color: dropdownTextColor,
+                    fontFamily: "'Titillium Web', sans-serif",
+                    backgroundColor: value === option.id ? (theme.name === "dark" ? "#4299e1" : "#EBF5FF") : "transparent",
+                    hover: { backgroundColor: optionsHoverBg }
+                  }}
+                  onClick={() => {
+                    onChange({ target: { value: option.id } });
+                    setIsOpen(false);
+                    setSearchTerm("");
+                  }}
+                >
+                  {option.name}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Hidden select for form submission */}
+      <select 
+        value={value} 
+        onChange={onChange} 
+        className="sr-only" 
+        required
+      >
+        <option value="" disabled>Select Owner</option>
+        {options.map(option => (
+          <option key={option.id} value={option.id}>
+            {option.name}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+};
 
 const NewTask = () => {
   // Get theme from context
@@ -14,55 +236,154 @@ const NewTask = () => {
   const [urgency, setUrgency] = useState("normal");
   const [hasDueDate, setHasDueDate] = useState(false);
   const [dueDate, setDueDate] = useState("");
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [taskOwner, setTaskOwner] = useState("");
   const [userOptions, setUserOptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
+  
+  // Initialize a date for today to avoid null errors
+  const today = new Date();
+  const formattedToday = format(today, 'yyyy-MM-dd');
+
+  // Automatically open date picker when the user selects "Yes"
+  useEffect(() => {
+    if (hasDueDate) {
+      // Initialize dueDate to today if it's empty to avoid potential null errors
+      if (!dueDate) {
+        setDueDate(formattedToday);
+      }
+      
+      // Set a slight delay to ensure component is rendered
+      setTimeout(() => {
+        setIsDatePickerOpen(true);
+      }, 50);
+    } else {
+      setIsDatePickerOpen(false);
+      setDueDate(""); // Clear the date if "No" is selected
+    }
+  }, [hasDueDate, formattedToday]);
 
   // Fetch user details from the database
-  // Fetch user details from the database or localStorage
-useEffect(() => {
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      
-      // Try to get users from localStorage first
-      const storedUsers = localStorage.getItem('userOptions');
-      
-      if (storedUsers) {
-        // If users exist in localStorage, use them
-        setUserOptions(JSON.parse(storedUsers));
-        setLoading(false);
-      } else {
-        // If not in localStorage, fetch from database
-        const response = await databases.listDocuments(
-          DATABASE_ID,
-          COLLECTIONS.USER_DETAILS,
-          [Query.limit(100)]
-        );
-
-        const users = response.documents.map((user) => ({
-          id: user.$id,
-          name: user.username,
-          email: user.useremail,
-        }));
-
-        // Store in localStorage for future use
-        localStorage.setItem('userOptions', JSON.stringify(users));
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true);
         
-        setUserOptions(users);
+        // Try to get users from localStorage first
+        const storedUsers = localStorage.getItem('userOptions');
+        
+        if (storedUsers) {
+          // If users exist in localStorage, use them
+          setUserOptions(JSON.parse(storedUsers));
+          setLoading(false);
+        } else {
+          // If not in localStorage, fetch from database
+          const response = await databases.listDocuments(
+            DATABASE_ID,
+            COLLECTIONS.USER_DETAILS,
+            [Query.limit(100)]
+          );
+
+          const users = response.documents.map((user) => ({
+            id: user.$id,
+            name: user.username,
+            email: user.useremail,
+          }));
+
+          // Store in localStorage for future use
+          localStorage.setItem('userOptions', JSON.stringify(users));
+          
+          setUserOptions(users);
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error("Error fetching users:", err);
+        setError("Failed to load users. Please try again.");
         setLoading(false);
       }
-    } catch (err) {
-      console.error("Error fetching users:", err);
-      setError("Failed to load users. Please try again.");
-      setLoading(false);
-    }
+    };
+
+    fetchUsers();
+  }, []);
+
+  // Function to filter out past dates
+  const filterPastDates = (date) => {
+    // Allow today or future dates
+    return isToday(date) || !isBefore(date, addDays(new Date(), 0));
   };
 
-  fetchUsers();
-}, []);
+  // Add calendar-specific styles
+  useEffect(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      .dark-theme-datepicker .react-datepicker {
+        background-color: #374151;
+        border: 1px solid #4B5563;
+        font-family: 'Titillium Web', sans-serif;
+        z-index: 1000;
+      }
+      
+      .dark-theme-datepicker .react-datepicker__header {
+        background-color: #1F2937;
+        border-bottom: 1px solid #4B5563;
+      }
+      
+      .dark-theme-datepicker .react-datepicker__current-month,
+      .dark-theme-datepicker .react-datepicker__day-name,
+      .dark-theme-datepicker .react-datepicker__day {
+        color: #ffffff;
+        font-family: 'Titillium Web', sans-serif;
+      }
+      
+      .dark-theme-datepicker .react-datepicker__day:hover {
+        background-color: #4299e1;
+      }
+      
+      .dark-theme-datepicker .react-datepicker__day--selected {
+        background-color: #4299e1;
+      }
+      
+      .dark-theme-datepicker .react-datepicker__day--today {
+        font-weight: bold;
+        color: #4299e1;
+      }
+      
+      .react-datepicker__day {
+        font-family: 'Titillium Web', sans-serif;
+      }
+      
+      .react-datepicker__navigation-icon {
+        top: 4px;
+      }
+      
+      .react-datepicker__day--keyboard-selected {
+        background-color: ${currentTheme.name === "dark" ? "#4299e1" : "#3B82F6"};
+        color: white;
+      }
+      
+      .react-datepicker__day--disabled {
+        color: ${currentTheme.name === "dark" ? "#6B7280" : "#D1D5DB"} !important;
+        cursor: not-allowed;
+      }
+      
+      /* Fix for the dropdown expanding container issue */
+      .react-datepicker-popper {
+        z-index: 9999 !important;
+        position: absolute !important;
+      }
+      
+      .react-datepicker-wrapper {
+        width: 100%;
+      }
+    `;
+    document.head.appendChild(style);
+    
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, [currentTheme.name]);
 
   // Handle form submission
   const handleSubmit = async (e) => {
@@ -146,11 +467,6 @@ useEffect(() => {
       ? `w-full px-4 py-3 ${currentTheme.text} bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`
       : "w-full px-4 py-3 text-gray-700 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500";
 
-  const selectClass =
-    currentTheme.name === "dark"
-      ? `px-4 py-3 ${currentTheme.text} bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500`
-      : "px-4 py-3 text-gray-700 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500";
-
   const errorClass =
     currentTheme.name === "dark"
       ? "mb-4 p-3 bg-red-900 border border-red-800 text-red-200 rounded"
@@ -213,12 +529,14 @@ useEffect(() => {
           />
         </div>
         {/* Inline Section for Task Owner, Urgency, and Due Date */}
-        <div className="mb-16 mt-10 grid grid-cols-1 items-center md:grid-cols-3 gap-4">
-          {/* Task Owner */}
+        <div className="mb-16 mt-10 grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Task Owner - Searchable Dropdown Component */}
           <div
             className="text-center p-4.5 border rounded-lg shadow-sm"
             style={{
               borderColor: currentTheme.name === "dark" ? "#4B5563" : "#E5E7EB",
+              position: "relative", // Add this to contain the dropdown
+              zIndex: 2 // Lower z-index than the date picker
             }}
           >
             <label htmlFor="taskOwner" className={`${labelClass} text-center`}>
@@ -234,49 +552,13 @@ useEffect(() => {
                   Loading...
                 </div>
               ) : (
-                <select
-                  id="taskOwner"
+                <SearchableDropdown
+                  options={userOptions}
                   value={taskOwner}
                   onChange={(e) => setTaskOwner(e.target.value)}
-                  className={`${selectClass} ${currentTheme.text}`}
-                  style={{
-                    backgroundColor: currentTheme.name === "dark" ? "#374151" : "#fff",
-                    color: currentTheme.name === "dark" ? "white" : "black",
-                    padding: "0 0.5rem",
-                    fontFamily: "'Titillium Web', sans-serif !important", // Added !important
-                    fontSize: "inherit",
-                    WebkitFontSmoothing: "antialiased", // Improve text rendering
-                    MozOsxFontSmoothing: "grayscale",   // Improve text rendering
-                    fontWeight: 400                      // Specify font weight
-                  
-                  }}
-                  required
-                >
-                  <option
-                    value=""
-                    style={{
-                      backgroundColor:
-                        currentTheme.name === "dark" ? "#374151" : "#fff",
-                    }}
-                  >
-                    Select Owner
-                  </option>
-                  {userOptions.map((user) => (
-                    <option
-                      key={user.id}
-                      value={user.id}
-                      style={{
-                        backgroundColor:
-                          currentTheme.name === "dark" ? "#374151" : "#fff",
-                        color: currentTheme.name === "dark" ? "white" : "black",
-                        fontFamily: "'Titillium Web', sans-serif", // Explicitly set Titillium Web font
-                       fontSize: "inherit"
-                      }}
-                    >
-                      {user.name}
-                    </option>
-                  ))}
-                </select>
+                  loading={loading}
+                  theme={currentTheme}
+                />
               )}
             </div>
           </div>
@@ -286,6 +568,8 @@ useEffect(() => {
             className="text-center p-3 border rounded-lg shadow-sm"
             style={{
               borderColor: currentTheme.name === "dark" ? "#4B5563" : "#E5E7EB",
+              position: "relative", // Add this to contain the dropdown
+              zIndex: 2 // Lower z-index than the date picker
             }}
           >
             <label className={`${labelClass} text-center`}>Urgency</label>
@@ -313,53 +597,100 @@ useEffect(() => {
             </div>
           </div>
 
-
-{/* Due Date with Radio Button */}
-<div
-  className="text-center p-3 border rounded-lg shadow-sm"
-  style={{
-    borderColor: currentTheme.name === "dark" ? "#4B5563" : "#E5E7EB",
-  }}
->
-  <label className={`${labelClass} text-center`}>
-    Has a due date?
-  </label>
-  <div className="flex items-center justify-center space-x-2">
-    <div
-      className={`${radioClass} ${
-        !hasDueDate ? radioActiveClassNormal : radioInactiveClass
-      }`}
-      onClick={() => setHasDueDate(false)}
-    >
-      <span className="font-medium">No</span>
-    </div>
-    <div
-      className={`${radioClass} ${
-        hasDueDate ? radioActiveClassCritical : radioInactiveClass
-      }`}
-      onClick={() => setHasDueDate(true)}
-    >
-      <span className="font-medium">Yes</span>
-    </div>
-  </div>
-  
- {/* Date picker appears when "Yes" is selected - date only, no time */}
-{hasDueDate && (
-  <div className="mt-3">
-    <input
-      type="date"
-      id="dueDate"
-      value={dueDate}
-      onChange={(e) => setDueDate(e.target.value)}
-      className={inputClass}
-      style={{
-        fontFamily: "'Titillium Web', sans-serif !important", 
-        fontSize: "inherit",
-        WebkitFontSmoothing: "antialiased",
-        MozOsxFontSmoothing: "grayscale",
-        fontWeight: 400,
-        color: currentTheme.name === "dark" ? "white" : "black"
+          {/* Due Date with Radio Button */}
+          <div
+            className="text-center p-3 border rounded-lg shadow-sm"
+            style={{
+              borderColor: currentTheme.name === "dark" ? "#4B5563" : "#E5E7EB",
+              position: "relative", // Add this to contain the dropdown
+              zIndex: 10 // Higher z-index for the date picker
+            }}
+          >
+            <label className={`${labelClass} text-center`}>
+              Has a due date?
+            </label>
+            <div className="flex items-center justify-center space-x-2">
+              <div
+                className={`${radioClass} ${
+                  !hasDueDate ? radioActiveClassNormal : radioInactiveClass
+                }`}
+                onClick={() => setHasDueDate(false)}
+              >
+                <span className="font-medium">No</span>
+              </div>
+              <div
+                className={`${radioClass} ${
+                  hasDueDate ? radioActiveClassCritical : radioInactiveClass
+                }`}
+                onClick={() => setHasDueDate(true)}
+              >
+                <span className="font-medium">Yes</span>
+              </div>
+            </div>
+            
+            {/* Date picker appears when "Yes" is selected */}
+            {hasDueDate && (
+  <div className="mt-3 relative">
+    <DatePicker
+      selected={dueDate ? new Date(dueDate) : new Date()} // Default to today
+      onChange={(date) => {
+        if (date) { // Check for valid date
+          const formattedDate = format(date, 'yyyy-MM-dd');
+          setDueDate(formattedDate);
+          setIsDatePickerOpen(false); // Close calendar after selection
+        }
       }}
+      dateFormat="dd-MM-yyyy"
+      open={isDatePickerOpen}
+      onClickOutside={() => setIsDatePickerOpen(false)} // Close when clicking outside
+      filterDate={filterPastDates} // Disable past dates
+      minDate={new Date()} // Set minimum date to today
+      
+      // Remove these problematic props that are causing the computePosition error
+      // popperPlacement="bottom"
+      // popperModifiers={[...]}
+      
+      // Use simpler positioning settings
+      popperProps={{
+        positionFixed: true,
+        strategy: "fixed"
+      }}
+      
+      renderCustomHeader={(props) => (
+        <CustomHeader {...props} theme={currentTheme} />
+      )}
+      calendarClassName={currentTheme.name === "dark" ? "dark-calendar" : ""}
+      wrapperClassName="w-full"
+      popperClassName={currentTheme.name === "dark" ? "dark-theme-datepicker" : ""}
+      customInput={
+        <div className="relative w-full">
+          <input
+            type="text"
+            className={`${inputClass} pl-10 cursor-pointer`}
+            value={dueDate ? format(new Date(dueDate), 'dd-MM-yyyy') : ''} // Show selected date
+            placeholder="dd-mm-yyyy"
+            readOnly
+            onClick={() => setIsDatePickerOpen(!isDatePickerOpen)} // Toggle calendar on input click
+            style={{
+              fontFamily: "'Titillium Web', sans-serif",
+              color: currentTheme.name === "dark" ? "white" : "black",
+              backgroundColor: currentTheme.name === "dark" ? "#374151" : "#ffffff",
+            }}
+          />
+          <div 
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent input's onClick from firing
+              setIsDatePickerOpen(!isDatePickerOpen); // Toggle calendar on icon click
+            }}
+          >
+            <Calendar
+              size={18}
+              color={currentTheme.name === "dark" ? "#9CA3AF" : "#6B7280"}
+            />
+          </div>
+        </div>
+      }
     />
     {dueDate && (
       <div className={`mt-2 ${currentTheme.text} text-sm`}
@@ -371,16 +702,8 @@ useEffect(() => {
     )}
   </div>
 )}
-
 </div>
 </div>
-
-
-
-
-
-
-
         {/* Assign Task Button with UserCheck icon */}
         <button
           type="submit"

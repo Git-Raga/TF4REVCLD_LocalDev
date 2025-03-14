@@ -4,6 +4,7 @@ import salesforceLogo from "../assets/Salesforce-Logo.jpg";
 import { databases, DATABASE_ID, COLLECTIONS } from "../appwrite/config";
 import { Query } from "appwrite";
 
+
 const Login = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -28,15 +29,21 @@ const Login = () => {
       if (response.documents.length > 0) {
         try {
           const userData = response.documents[0];
+
+
+
+
+
+
           localStorage.setItem("user", JSON.stringify(userData));
           const userThemePreference = userData.theme || "dark";
           localStorage.setItem("theme", userThemePreference);
 
           // Add a small delay to ensure storage is complete
           setTimeout(() => {
-            navigate("/landing");
+            window.location.href = "/landing";
             console.log("Navigation attempted");
-          }, 100);
+          }, 500);
         } catch (storageError) {
           console.error("Storage error:", storageError);
           setError("Failed to save session data");
@@ -134,7 +141,7 @@ const Login = () => {
         <div
           className="absolute inset-0 bg-cover bg-center z-0"
           style={{
-            backgroundImage: `url('/src/assets/boat.jpg')`,
+            backgroundImage: `url('./src/assets/boat.jpg')`,
           }}
         >
           <div className="absolute inset-0 bg-[#1a2a49] opacity-90"></div>

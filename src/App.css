@@ -1,1 +1,44 @@
 @import "tailwindcss";
+
+/* Dark theme styles for the date picker */
+.dark-theme-datepicker .react-datepicker {
+    background-color: #374151;
+    border: 1px solid #4B5563;
+    font-family: 'Titillium Web', sans-serif;
+  }
+  
+  .dark-theme-datepicker .react-datepicker__header {
+    background-color: #1F2937;
+    border-bottom: 1px solid #4B5563;
+  }
+  
+  .dark-theme-datepicker .react-datepicker__current-month,
+  .dark-theme-datepicker .react-datepicker__day-name,
+  .dark-theme-datepicker .react-datepicker__day {
+    color: #ffffff;
+    font-family: 'Titillium Web', sans-serif;
+  }
+  
+  .dark-theme-datepicker .react-datepicker__day:hover {
+    background-color: #4299e1;
+  }
+  
+  .dark-theme-datepicker .react-datepicker__day--selected {
+    background-color: #4299e1;
+  }
+  
+  .dark-calendar .react-datepicker__day--today {
+    font-weight: bold;
+    color: #4299e1;
+  }
+  
+  .dark-day {
+    font-family: 'Titillium Web', sans-serif;
+  }
+  
+  /* Light theme overrides if needed */
+  .light-theme-datepicker .react-datepicker__day,
+  .light-theme-datepicker .react-datepicker__current-month,
+  .light-theme-datepicker .react-datepicker__day-name {
+    font-family: 'Titillium Web', sans-serif;
+  }
