@@ -9,27 +9,27 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css"; // Base styles
 
 // Custom header component for the date picker to match your theme
-const CustomHeader = ({ 
-  date, 
-  decreaseMonth, 
-  increaseMonth, 
-  prevMonthButtonDisabled, 
+const CustomHeader = ({
+  date,
+  decreaseMonth,
+  increaseMonth,
+  prevMonthButtonDisabled,
   nextMonthButtonDisabled,
-  theme
+  theme,
 }) => {
   const textColor = theme.name === "dark" ? "#ffffff" : "#000000";
   const bgColor = theme.name === "dark" ? "#374151" : "#ffffff";
-  
+
   const handleDecrease = (e) => {
     e.preventDefault(); // Prevent form submission
     decreaseMonth();
   };
-  
+
   const handleIncrease = (e) => {
     e.preventDefault(); // Prevent form submission
     increaseMonth();
   };
-  
+
   return (
     <div
       style={{
@@ -38,7 +38,7 @@ const CustomHeader = ({
         justifyContent: "space-between",
         fontFamily: "'Titillium Web', sans-serif",
         color: textColor,
-        backgroundColor: bgColor
+        backgroundColor: bgColor,
       }}
     >
       <button
@@ -49,11 +49,13 @@ const CustomHeader = ({
       >
         {"<"}
       </button>
-      <div style={{ 
-        fontWeight: "bold", 
-        color: textColor,
-        fontSize: "1.1rem" // Increased font size
-      }}>
+      <div
+        style={{
+          fontWeight: "bold",
+          color: textColor,
+          fontSize: "1.1rem", // Increased font size
+        }}
+      >
         {format(date, "MMMM yyyy")}
       </div>
       <button
@@ -68,17 +70,16 @@ const CustomHeader = ({
   );
 };
 
-
 // Searchable dropdown component
 const SearchableDropdown = ({ options, value, onChange, loading, theme }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const selectedOption = options.find(opt => opt.id === value);
+  const selectedOption = options.find((opt) => opt.id === value);
   const dropdownRef = useRef(null);
   const inputRef = useRef(null);
 
   // Filter options based on search term
-  const filteredOptions = options.filter(option => 
+  const filteredOptions = options.filter((option) =>
     option.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -89,7 +90,7 @@ const SearchableDropdown = ({ options, value, onChange, loading, theme }) => {
         setIsOpen(false);
       }
     };
-    
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
@@ -104,7 +105,8 @@ const SearchableDropdown = ({ options, value, onChange, loading, theme }) => {
   // Determine colors based on theme
   const dropdownBg = theme.name === "dark" ? "#2D3748" : "#ffffff";
   const dropdownTextColor = theme.name === "dark" ? "#ffffff" : "#000000";
-  const dropdownBorder = theme.name === "dark" ? "2px solid #4299e1" : "1px solid #E5E7EB";
+  const dropdownBorder =
+    theme.name === "dark" ? "2px solid #4299e1" : "1px solid #E5E7EB";
   const optionsBg = theme.name === "dark" ? "#374151" : "#f9fafb";
   const optionsHoverBg = theme.name === "dark" ? "#4B5563" : "#f3f4f6";
   const placeholderColor = theme.name === "dark" ? "#9CA3AF" : "#6B7280";
@@ -119,7 +121,7 @@ const SearchableDropdown = ({ options, value, onChange, loading, theme }) => {
           backgroundColor: dropdownBg,
           color: dropdownTextColor,
           border: dropdownBorder,
-          fontFamily: "'Titillium Web', sans-serif"
+          fontFamily: "'Titillium Web', sans-serif",
         }}
       >
         <span>{selectedOption ? selectedOption.name : "Select Owner"}</span>
@@ -127,7 +129,9 @@ const SearchableDropdown = ({ options, value, onChange, loading, theme }) => {
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 20 20"
           fill="currentColor"
-          className={`w-5 h-5 transition-transform ${isOpen ? 'transform rotate-180' : ''}`}
+          className={`w-5 h-5 transition-transform ${
+            isOpen ? "transform rotate-180" : ""
+          }`}
         >
           <path
             fillRule="evenodd"
@@ -136,15 +140,20 @@ const SearchableDropdown = ({ options, value, onChange, loading, theme }) => {
           />
         </svg>
       </div>
-      
+
       {/* Dropdown menu */}
       {isOpen && (
-        <div 
+        <div
           className="absolute z-50 w-full mt-1 shadow-lg rounded-md overflow-hidden"
           style={{ backgroundColor: optionsBg }}
         >
           {/* Search input */}
-          <div className="p-2 border-b" style={{ borderColor: theme.name === "dark" ? "#4B5563" : "#E5E7EB" }}>
+          <div
+            className="p-2 border-b"
+            style={{
+              borderColor: theme.name === "dark" ? "#4B5563" : "#E5E7EB",
+            }}
+          >
             <div className="relative">
               <input
                 ref={inputRef}
@@ -154,18 +163,26 @@ const SearchableDropdown = ({ options, value, onChange, loading, theme }) => {
                 placeholder="Search..."
                 className="w-full pl-8 pr-8 py-2 rounded"
                 style={{
-                  backgroundColor: theme.name === "dark" ? "#1F2937" : "#ffffff",
+                  backgroundColor:
+                    theme.name === "dark" ? "#1F2937" : "#ffffff",
                   color: dropdownTextColor,
-                  border: theme.name === "dark" ? "1px solid #4B5563" : "1px solid #E5E7EB",
-                  fontFamily: "'Titillium Web', sans-serif"
+                  border:
+                    theme.name === "dark"
+                      ? "1px solid #4B5563"
+                      : "1px solid #E5E7EB",
+                  fontFamily: "'Titillium Web', sans-serif",
                 }}
               />
-              <Search className="absolute left-2 top-2.5" size={16} color={placeholderColor} />
+              <Search
+                className="absolute left-2 top-2.5"
+                size={16}
+                color={placeholderColor}
+              />
               {searchTerm && (
-                <X 
-                  className="absolute right-2 top-2.5 cursor-pointer" 
-                  size={16} 
-                  color={placeholderColor} 
+                <X
+                  className="absolute right-2 top-2.5 cursor-pointer"
+                  size={16}
+                  color={placeholderColor}
                   onClick={(e) => {
                     e.stopPropagation();
                     setSearchTerm("");
@@ -174,26 +191,31 @@ const SearchableDropdown = ({ options, value, onChange, loading, theme }) => {
               )}
             </div>
           </div>
-          
+
           {/* Options list */}
           <div className="max-h-60 overflow-y-auto">
             {filteredOptions.length === 0 ? (
-              <div 
+              <div
                 className="px-4 py-2 text-center"
                 style={{ color: placeholderColor }}
               >
                 No matches found
               </div>
             ) : (
-              filteredOptions.map(option => (
+              filteredOptions.map((option) => (
                 <div
                   key={option.id}
                   className="px-4 py-2 cursor-pointer hover:bg-gray-600"
-                  style={{ 
+                  style={{
                     color: dropdownTextColor,
                     fontFamily: "'Titillium Web', sans-serif",
-                    backgroundColor: value === option.id ? (theme.name === "dark" ? "#4299e1" : "#EBF5FF") : "transparent",
-                    hover: { backgroundColor: optionsHoverBg }
+                    backgroundColor:
+                      value === option.id
+                        ? theme.name === "dark"
+                          ? "#4299e1"
+                          : "#EBF5FF"
+                        : "transparent",
+                    hover: { backgroundColor: optionsHoverBg },
                   }}
                   onClick={() => {
                     onChange({ target: { value: option.id } });
@@ -208,16 +230,13 @@ const SearchableDropdown = ({ options, value, onChange, loading, theme }) => {
           </div>
         </div>
       )}
-      
+
       {/* Hidden select for form submission */}
-      <select 
-        value={value} 
-        onChange={onChange} 
-        className="sr-only" 
-        required
-      >
-        <option value="" disabled>Select Owner</option>
-        {options.map(option => (
+      <select value={value} onChange={onChange} className="sr-only" required>
+        <option value="" disabled>
+          Select Owner
+        </option>
+        {options.map((option) => (
           <option key={option.id} value={option.id}>
             {option.name}
           </option>
@@ -242,10 +261,68 @@ const NewTask = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
-  
+  const [isTaskAssigned, setIsTaskAssigned] = useState(false);
+  const [isRotating, setIsRotating] = useState(false);
+  const [isTitleAnimating, setIsTitleAnimating] = useState(false);
+
   // Initialize a date for today to avoid null errors
   const today = new Date();
-  const formattedToday = format(today, 'yyyy-MM-dd');
+  const formattedToday = format(today, "yyyy-MM-dd");
+
+  // Add this separate useEffect for animations - MOVED INSIDE COMPONENT
+  useEffect(() => {
+    const animStyle = document.createElement("style");
+    animStyle.id = "custom-animations";
+    animStyle.textContent = `
+      /* Full rotation animation */
+      @keyframes rotateContainer {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      
+      .container-rotate {
+        animation: rotateContainer 1.5s ease-in-out;
+      }
+      
+      /* Title zoom animation */
+      @keyframes titleZoom {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.3); }
+        100% { transform: scale(1); }
+      }
+      
+      .title-zoom {
+        animation: titleZoom 1s ease-in-out;
+      }
+      
+      /* Disabled form overlay */
+      .form-disabled {
+        position: relative;
+        pointer-events: none;
+        opacity: 0.7;
+      }
+      
+      .form-disabled::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.1);
+        border-radius: 0.5rem;
+        z-index: 50;
+      }
+    `;
+    document.head.appendChild(animStyle);
+    
+    return () => {
+      const existingStyle = document.getElementById("custom-animations");
+      if (existingStyle) {
+        document.head.removeChild(existingStyle);
+      }
+    };
+  }, []); // Empty dependency array - run once on mount only
 
   // Automatically open date picker when the user selects "Yes"
   useEffect(() => {
@@ -254,7 +331,7 @@ const NewTask = () => {
       if (!dueDate) {
         setDueDate(formattedToday);
       }
-      
+
       // Set a slight delay to ensure component is rendered
       setTimeout(() => {
         setIsDatePickerOpen(true);
@@ -270,10 +347,10 @@ const NewTask = () => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        
+
         // Try to get users from localStorage first
-        const storedUsers = localStorage.getItem('userOptions');
-        
+        const storedUsers = localStorage.getItem("userOptions");
+
         if (storedUsers) {
           // If users exist in localStorage, use them
           setUserOptions(JSON.parse(storedUsers));
@@ -293,8 +370,8 @@ const NewTask = () => {
           }));
 
           // Store in localStorage for future use
-          localStorage.setItem('userOptions', JSON.stringify(users));
-          
+          localStorage.setItem("userOptions", JSON.stringify(users));
+
           setUserOptions(users);
           setLoading(false);
         }
@@ -314,10 +391,42 @@ const NewTask = () => {
     return isToday(date) || !isBefore(date, addDays(new Date(), 0));
   };
 
-  // Add calendar-specific styles
+  // Function to determine class name for each day
+  const getDayClassName = (date) => {
+    // Current theme specific class
+    const themeClass = currentTheme.name === "dark" ? "dark-day" : "light-day";
+
+    // Add selected class if this date is the selected date
+    if (dueDate && date.toDateString() === new Date(dueDate).toDateString()) {
+      return `${themeClass} selected-day`;
+    }
+
+    return themeClass;
+  };
+
+  // Add calendar-specific and animation styles
   useEffect(() => {
-    const style = document.createElement('style');
+    const style = document.createElement("style");
     style.textContent = `
+      /* Add direct inline styling for selected days in light mode */
+      .light-day.react-datepicker__day--selected,
+      .light-day.react-datepicker__day--keyboard-selected {
+        background-color: #87edb5 !important;
+        color: black !important;
+      }
+      
+      .light-day:hover:not(.react-datepicker__day--disabled):not(.react-datepicker__day--selected) {
+        background-color: #6ab089 !important;
+        color: black !important;
+      }
+      
+      .selected-day {
+        background-color: ${
+          currentTheme.name === "dark" ? "#4299e1" : "#87edb5"
+        } !important;
+        color: ${currentTheme.name === "dark" ? "white" : "black"} !important;
+      }
+      
       .dark-theme-datepicker .react-datepicker {
         background-color: #374151;
         border: 1px solid #4B5563;
@@ -338,16 +447,31 @@ const NewTask = () => {
       }
       
       .dark-theme-datepicker .react-datepicker__day:hover {
-        background-color: #4299e1;
+        background-color:rgb(24, 98, 56);
       }
       
       .dark-theme-datepicker .react-datepicker__day--selected {
-        background-color: #4299e1;
+        background-color:rgb(28, 116, 103);
       }
       
       .dark-theme-datepicker .react-datepicker__day--today {
         font-weight: bold;
-        color: #4299e1;
+        color:rgb(199, 241, 241);
+      }
+      
+      .light-theme-datepicker .react-datepicker__day--selected {
+        background-color: #87edb5 !important;
+        color: black !important;
+      }
+      
+      .light-theme-datepicker .react-datepicker__day--keyboard-selected {
+        background-color: #87edb5 !important;
+        color: black !important;
+      }
+      
+      .light-theme-datepicker .react-datepicker__day:hover:not(.react-datepicker__day--disabled):not(.react-datepicker__day--selected) {
+        background-color: #6ab089 !important;
+        color: black !important;
       }
       
       .react-datepicker__day {
@@ -359,12 +483,16 @@ const NewTask = () => {
       }
       
       .react-datepicker__day--keyboard-selected {
-        background-color: ${currentTheme.name === "dark" ? "#4299e1" : "#3B82F6"};
-        color: white;
+        background-color: ${
+          currentTheme.name === "dark" ? "#4299e1" : "#87edb5"
+        } !important;
+        color: ${currentTheme.name === "dark" ? "white" : "black"} !important;
       }
       
       .react-datepicker__day--disabled {
-        color: ${currentTheme.name === "dark" ? "#6B7280" : "#D1D5DB"} !important;
+        color: ${
+          currentTheme.name === "dark" ? "#6B7280" : "#D1D5DB"
+        } !important;
         cursor: not-allowed;
       }
       
@@ -379,33 +507,33 @@ const NewTask = () => {
       }
     `;
     document.head.appendChild(style);
-    
+
     return () => {
       document.head.removeChild(style);
     };
-  }, [currentTheme.name]);
+  }, [currentTheme.name, dueDate]);
 
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     if (!taskName || !taskOwner) {
       setError("Task name and owner are required fields");
       return;
     }
-
+  
     try {
       setAuthLoading(true);
       // Get selected user details
       const selectedUser = userOptions.find((user) => user.id === taskOwner);
-
+  
       // Check if we have the user data before proceeding
       if (!selectedUser) {
         setError("Selected user not found. Please refresh and try again.");
         setAuthLoading(false);
         return;
       }
-
+  
       // Create new task document with explicit permissions
       const response = await databases.createDocument(
         DATABASE_ID,
@@ -423,17 +551,32 @@ const NewTask = () => {
           urgency: urgency === "critical" ? "Critical" : "Normal",
         }
       );
-
-      // Reset form after successful submission
-      setTaskName("");
-      setUrgency("normal");
-      setHasDueDate(false);
-      setDueDate("");
-      setTaskOwner("");
-      setError(null);
-
-      // Show success message or redirect
-      alert("Task assigned successfully!");
+  
+      // Change button text to "Task assigned"
+      setIsTaskAssigned(true);
+  
+      // Start rotation animation
+      setIsRotating(true);
+  
+      // Reset form after successful submission (with a delay to see the "Task assigned" text)
+      setTimeout(() => {
+        // Start title animation after rotation is complete
+        setIsTitleAnimating(true);
+        
+        setTimeout(() => {
+          // Reset form values
+          setTaskName("");
+          setUrgency("normal");
+          setHasDueDate(false);
+          setDueDate("");
+          setTaskOwner("");
+          setError(null);
+          setIsTaskAssigned(false); // Reset button text after delay
+          setIsRotating(false); // Stop rotation animation
+          setIsTitleAnimating(false); // Stop title animation
+          setAuthLoading(false); // Only re-enable form after all animations
+        }, 1000); // 1 second for title animation
+      }, 1500); // Wait for rotation to complete
     } catch (err) {
       console.error("Error creating task:", err);
       // Provide more specific error message based on error type
@@ -446,16 +589,19 @@ const NewTask = () => {
       } else {
         setError(`Failed to assign task: ${err.message}`);
       }
-    } finally {
-      setAuthLoading(false);
-    }
+      setAuthLoading(false); // Re-enable form on error
+    }  
   };
 
   // Setup theme-dependent styles
   const containerClass =
     currentTheme.name === "dark"
-      ? `max-w-3xl mx-auto mt-10 p-6 ${currentTheme.cardBackground} rounded-lg shadow-lg`
-      : "max-w-3xl mx-auto p-6 mt-10 bg-gray-100 rounded-lg shadow-lg";
+      ? `max-w-3xl mx-auto mt-10 p-6 ${
+          currentTheme.cardBackground
+        } rounded-lg shadow-lg ${isRotating ? "container-rotate" : ""}`
+      : `max-w-3xl mx-auto p-6 mt-10 bg-gray-100 rounded-lg shadow-lg ${
+          isRotating ? "container-rotate" : ""
+        }`;
 
   const labelClass =
     currentTheme.name === "dark"
@@ -503,7 +649,9 @@ const NewTask = () => {
     <div className={containerClass}>
       <div className="flex items-center justify-center flex-col mb-6 ">
         <h1
-          className={`text-3xl font-bold ${currentTheme.text} mb-4 text-center`}
+          className={`text-3xl font-bold ${currentTheme.text} mb-4 text-center ${
+            isTitleAnimating ? "title-zoom" : ""
+          }`}
         >
           Create New Task
         </h1>
@@ -512,11 +660,14 @@ const NewTask = () => {
 
       {error && <div className={errorClass}>{error}</div>}
 
-      <form onSubmit={handleSubmit}>
+      <form 
+        onSubmit={handleSubmit} 
+        className={authLoading || isRotating ? "form-disabled" : ""}
+      >
         {/* Task Name */}
         <div className="mb-6 text-2xl">
           <label htmlFor="taskName" className={labelClass}>
-            New Task Detais
+            New Task Details
           </label>
           <input
             type="text"
@@ -536,7 +687,7 @@ const NewTask = () => {
             style={{
               borderColor: currentTheme.name === "dark" ? "#4B5563" : "#E5E7EB",
               position: "relative", // Add this to contain the dropdown
-              zIndex: 2 // Lower z-index than the date picker
+              zIndex: 2, // Lower z-index than the date picker
             }}
           >
             <label htmlFor="taskOwner" className={`${labelClass} text-center`}>
@@ -569,7 +720,7 @@ const NewTask = () => {
             style={{
               borderColor: currentTheme.name === "dark" ? "#4B5563" : "#E5E7EB",
               position: "relative", // Add this to contain the dropdown
-              zIndex: 2 // Lower z-index than the date picker
+              zIndex: 2, // Lower z-index than the date picker
             }}
           >
             <label className={`${labelClass} text-center`}>Urgency</label>
@@ -603,7 +754,7 @@ const NewTask = () => {
             style={{
               borderColor: currentTheme.name === "dark" ? "#4B5563" : "#E5E7EB",
               position: "relative", // Add this to contain the dropdown
-              zIndex: 10 // Higher z-index for the date picker
+              zIndex: 10, // Higher z-index for the date picker
             }}
           >
             <label className={`${labelClass} text-center`}>
@@ -627,95 +778,147 @@ const NewTask = () => {
                 <span className="font-medium">Yes</span>
               </div>
             </div>
-            
+
             {/* Date picker appears when "Yes" is selected */}
             {hasDueDate && (
-  <div className="mt-3 relative">
-    <DatePicker
-      selected={dueDate ? new Date(dueDate) : new Date()} // Default to today
-      onChange={(date) => {
-        if (date) { // Check for valid date
-          const formattedDate = format(date, 'yyyy-MM-dd');
-          setDueDate(formattedDate);
-          setIsDatePickerOpen(false); // Close calendar after selection
-        }
-      }}
-      dateFormat="dd-MM-yyyy"
-      open={isDatePickerOpen}
-      onClickOutside={() => setIsDatePickerOpen(false)} // Close when clicking outside
-      filterDate={filterPastDates} // Disable past dates
-      minDate={new Date()} // Set minimum date to today
-      
-      // Remove these problematic props that are causing the computePosition error
-      // popperPlacement="bottom"
-      // popperModifiers={[...]}
-      
-      // Use simpler positioning settings
-      popperProps={{
-        positionFixed: true,
-        strategy: "fixed"
-      }}
-      
-      renderCustomHeader={(props) => (
-        <CustomHeader {...props} theme={currentTheme} />
-      )}
-      calendarClassName={currentTheme.name === "dark" ? "dark-calendar" : ""}
-      wrapperClassName="w-full"
-      popperClassName={currentTheme.name === "dark" ? "dark-theme-datepicker" : ""}
-      customInput={
-        <div className="relative w-full">
-          <input
-            type="text"
-            className={`${inputClass} pl-10 cursor-pointer`}
-            value={dueDate ? format(new Date(dueDate), 'dd-MM-yyyy') : ''} // Show selected date
-            placeholder="dd-mm-yyyy"
-            readOnly
-            onClick={() => setIsDatePickerOpen(!isDatePickerOpen)} // Toggle calendar on input click
-            style={{
-              fontFamily: "'Titillium Web', sans-serif",
-              color: currentTheme.name === "dark" ? "white" : "black",
-              backgroundColor: currentTheme.name === "dark" ? "#374151" : "#ffffff",
-            }}
-          />
-          <div 
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
-            onClick={(e) => {
-              e.stopPropagation(); // Prevent input's onClick from firing
-              setIsDatePickerOpen(!isDatePickerOpen); // Toggle calendar on icon click
-            }}
-          >
-            <Calendar
-              size={18}
-              color={currentTheme.name === "dark" ? "#9CA3AF" : "#6B7280"}
-            />
-          </div>
+              <div className="mt-3 relative">
+                <DatePicker
+                  selected={dueDate ? new Date(dueDate) : new Date()} // Default to today
+                  onChange={(date) => {
+                    if (date) {
+                      // Check for valid date
+                      const formattedDate = format(date, "yyyy-MM-dd");
+                      setDueDate(formattedDate);
+                      setIsDatePickerOpen(false); // Close calendar after selection
+                    }
+                  }}
+                  dateFormat="dd-MM-yyyy"
+                  open={isDatePickerOpen}
+                  onClickOutside={() => setIsDatePickerOpen(false)} // Close when clicking outside
+                  filterDate={filterPastDates} // Disable past dates
+                  minDate={new Date()} // Set minimum date to today
+                  // Use simpler positioning settings
+                  popperProps={{
+                    positionFixed: true,
+                    strategy: "fixed",
+                  }}
+                  // Add day className for styling specific days
+                  dayClassName={getDayClassName}
+                  // Add inline styling for selected day
+                  renderDayContents={(day, date) => {
+                    return (
+                      <div
+                        style={{
+                          backgroundColor:
+                         
+                          dueDate &&
+                          date.toDateString() ===
+                            new Date(dueDate).toDateString() &&
+                          currentTheme.name !== "dark"
+                            ? "#87edb5"
+                            : undefined,
+                        color:
+                          dueDate &&
+                          date.toDateString() ===
+                            new Date(dueDate).toDateString() &&
+                          currentTheme.name !== "dark"
+                            ? "black"
+                            : undefined,
+                        width: "100%",
+                        height: "100%",
+                        borderRadius: "4px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {day}
+                    </div>
+                  );
+                }}
+                renderCustomHeader={(props) => (
+                  <CustomHeader {...props} theme={currentTheme} />
+                )}
+                calendarClassName={
+                  currentTheme.name === "dark"
+                    ? "dark-calendar"
+                    : "light-calendar"
+                }
+                popperClassName={
+                  currentTheme.name === "dark"
+                    ? "dark-theme-datepicker"
+                    : "light-theme-datepicker"
+                }
+                wrapperClassName="w-full"
+                customInput={
+                  <div className="relative w-full">
+                    <input
+                      type="text"
+                      className={`${inputClass} pl-10 cursor-pointer`}
+                      value={
+                        dueDate ? format(new Date(dueDate), "dd-MM-yyyy") : ""
+                      } // Show selected date
+                      placeholder="dd-mm-yyyy"
+                      readOnly
+                      onClick={() => setIsDatePickerOpen(!isDatePickerOpen)} // Toggle calendar on input click
+                      style={{
+                        fontFamily: "'Titillium Web', sans-serif",
+                        color:
+                          currentTheme.name === "dark" ? "white" : "black",
+                        backgroundColor:
+                          currentTheme.name === "dark"
+                            ? "#374151"
+                            : "#ffffff",
+                      }}
+                    />
+                    <div
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent input's onClick from firing
+                        setIsDatePickerOpen(!isDatePickerOpen); // Toggle calendar on icon click
+                      }}
+                    >
+                      <Calendar
+                        size={18}
+                        color={
+                          currentTheme.name === "dark" ? "#9CA3AF" : "#6B7280"
+                        }
+                      />
+                    </div>
+                  </div>
+                }
+              />
+              {dueDate && (
+                <div
+                  className={`mt-2 ${currentTheme.text} text-sm`}
+                  style={{
+                    fontFamily: "'Titillium Web', sans-serif",
+                  }}
+                >
+                  Selected: {format(new Date(dueDate), "dd-MMM-yy")}
+                </div>
+              )}
+            </div>
+          )}
         </div>
-      }
-    />
-    {dueDate && (
-      <div className={`mt-2 ${currentTheme.text} text-sm`}
-           style={{
-             fontFamily: "'Titillium Web', sans-serif"
-           }}>
-        Selected: {format(new Date(dueDate), 'dd-MMM-yy')}
       </div>
-    )}
+
+      {/* Assign Task Button with UserCheck icon */}
+      <button
+        type="submit"
+        disabled={authLoading || isRotating}
+        className={`${buttonClass} mb-10`}
+      >
+        <UserCheck size={20} className="mr-2" color={iconColor} />
+        {authLoading || isRotating
+          ? "Assigning the task - please wait..."
+          : isTaskAssigned
+          ? "Task assigned"
+          : "Assign Task"}
+      </button>
+    </form>
   </div>
-)}
-</div>
-</div>
-        {/* Assign Task Button with UserCheck icon */}
-        <button
-          type="submit"
-          disabled={authLoading}
-          className={`${buttonClass} mb-10`}
-        >
-          <UserCheck size={20} className="mr-2" color={iconColor} />
-          {authLoading ? "Assigning..." : "Assign Task"}
-        </button>
-      </form>
-    </div>
-  );
+);
 };
 
 export default NewTask;
