@@ -347,10 +347,13 @@ const NewTask = () => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-
+    
+        // Clear localStorage to ensure fresh data (you can remove this line after fixing)
+        localStorage.removeItem("userOptions");
+    
         // Try to get users from localStorage first
         const storedUsers = localStorage.getItem("userOptions");
-
+    
         if (storedUsers) {
           // If users exist in localStorage, use them
           setUserOptions(JSON.parse(storedUsers));
@@ -362,16 +365,21 @@ const NewTask = () => {
             COLLECTIONS.USER_DETAILS,
             [Query.limit(100)]
           );
-
+    
+          // Log first document to see actual field names
+          console.log("User data sample:", response.documents[0]);
+    
           const users = response.documents.map((user) => ({
             id: user.$id,
             name: user.username,
             email: user.useremail,
+            // Check all possible field names for initials
+            initials: user.initials || user.initial || user.userInitial
           }));
-
+    
           // Store in localStorage for future use
           localStorage.setItem("userOptions", JSON.stringify(users));
-
+    
           setUserOptions(users);
           setLoading(false);
         }
@@ -523,7 +531,9 @@ const NewTask = () => {
     }
   
     try {
+      // Disable form and show "Assigning..." message
       setAuthLoading(true);
+      
       // Get selected user details
       const selectedUser = userOptions.find((user) => user.id === taskOwner);
   
@@ -534,6 +544,9 @@ const NewTask = () => {
         return;
       }
   
+      // Start rotation animation
+      setIsRotating(true);
+      
       // Create new task document with explicit permissions
       const response = await databases.createDocument(
         DATABASE_ID,
@@ -542,7 +555,8 @@ const NewTask = () => {
         {
           taskname: taskName,
           taskownername: selectedUser.name,
-          taskownerinitial: selectedUser.name.charAt(0),
+          // Use initials if available, otherwise use first character of name as fallback
+          taskownerinitial: selectedUser.initials || selectedUser.name.charAt(0),
           taskowneremail: selectedUser.email,
           taskduedate: hasDueDate ? dueDate : null,
           userdone: false,
@@ -552,31 +566,35 @@ const NewTask = () => {
         }
       );
   
-      // Change button text to "Task assigned"
+      // Database update is complete, show task assigned
       setIsTaskAssigned(true);
-  
-      // Start rotation animation
-      setIsRotating(true);
-  
-      // Reset form after successful submission (with a delay to see the "Task assigned" text)
+      
+      // Wait for rotation animation to complete (if not already)
       setTimeout(() => {
-        // Start title animation after rotation is complete
-        setIsTitleAnimating(true);
+        // Rotation animation and DB update both complete
+        setIsRotating(false);
         
+        // Clear form and re-enable it
+        setTaskName("");
+        setUrgency("normal");
+        setHasDueDate(false);
+        setDueDate("");
+        setTaskOwner("");
+        setError(null);
+        setAuthLoading(false); // Re-enable form here
+        
+        // 1 second delay before title animation
         setTimeout(() => {
-          // Reset form values
-          setTaskName("");
-          setUrgency("normal");
-          setHasDueDate(false);
-          setDueDate("");
-          setTaskOwner("");
-          setError(null);
-          setIsTaskAssigned(false); // Reset button text after delay
-          setIsRotating(false); // Stop rotation animation
-          setIsTitleAnimating(false); // Stop title animation
-          setAuthLoading(false); // Only re-enable form after all animations
-        }, 1000); // 1 second for title animation
-      }, 1500); // Wait for rotation to complete
+          // Start title zoom animation
+          setIsTitleAnimating(true);
+          
+          // Wait for title animation to complete
+          setTimeout(() => {
+            setIsTitleAnimating(false); // Stop title animation
+            setIsTaskAssigned(false); // Reset button text
+          }, 1000); // 1 second for title animation
+        }, 1000); // 1 second delay before starting title animation
+      }, 1500); // 1.5 seconds for rotation animation
     } catch (err) {
       console.error("Error creating task:", err);
       // Provide more specific error message based on error type
@@ -589,17 +607,18 @@ const NewTask = () => {
       } else {
         setError(`Failed to assign task: ${err.message}`);
       }
-      setAuthLoading(false); // Re-enable form on error
-    }  
+      // Re-enable form on error and stop rotation
+      setAuthLoading(false);
+      setIsRotating(false);
+    }
   };
-
   // Setup theme-dependent styles
   const containerClass =
     currentTheme.name === "dark"
-      ? `max-w-3xl mx-auto mt-10 p-6 ${
+      ? `max-w-3xl mx-auto mt-15 p-6 ${
           currentTheme.cardBackground
         } rounded-lg shadow-lg ${isRotating ? "container-rotate" : ""}`
-      : `max-w-3xl mx-auto p-6 mt-10 bg-gray-100 rounded-lg shadow-lg ${
+      : `max-w-3xl mx-auto p-6 mt-15 bg-gray-100 rounded-lg shadow-lg ${
           isRotating ? "container-rotate" : ""
         }`;
 

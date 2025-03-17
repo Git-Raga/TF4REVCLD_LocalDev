@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useTheme } from './ColorChange';  // Keep this import
 import NewTask from './NewTask'
+import TaskHomeUser  from './TaskHomeUser'; // Regular user home component
+import TaskHomeAdmin from './TaskHomeAdmin'; // Admin user home component
 import { 
   Home, 
   Grid, 
@@ -331,6 +333,9 @@ const LogoutContent = ({ theme, onConfirm, onCancel }) => (
   </div>
 );
 
+
+
+
 const LandingPage = () => {
   const navigate = useNavigate();
   const [showSettings, setShowSettings] = useState(false);
@@ -338,6 +343,21 @@ const LandingPage = () => {
   const { currentTheme, isDarkTheme, toggleTheme } = useTheme();
   const [userData, setUserData] = useState(null);
   const [activeNavItem, setActiveNavItem] = useState('Home');
+  const [userRole, setUserRole] = useState('User'); // Default to User role
+
+
+
+
+  const renderHomeContent = () => {
+    // Check if user is Admin or SuperAdmin
+    if (userRole === 'Admin' || userRole === 'SuperAdmin') {
+      return <TaskHomeAdmin theme={theme} />;
+    } else {
+      // Regular user view
+      return <TaskHomeUser theme={theme} />;
+    }
+  };
+
 
   // Add button theme and input background to currentTheme
   const theme = {
@@ -356,12 +376,20 @@ const LandingPage = () => {
       try {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
-          setUserData(JSON.parse(storedUser));
+          const parsedUser = JSON.parse(storedUser);
+          setUserData(parsedUser);
+          
+          // Set the user role from stored data
+          if (parsedUser.role) {
+            setUserRole(parsedUser.role);
+          }
         }
       } catch (error) {
         console.error('Error parsing user data:', error);
       }
     };
+
+
 
     // Delay the execution to ensure connection listeners are set up first
     setTimeout(loadUserData, 0);
@@ -398,7 +426,7 @@ const LandingPage = () => {
   const renderContent = () => {
     switch (activeNavItem) {
       case 'Home':
-        return <HomeContent theme={theme} />;
+        return renderHomeContent(); 
       case 'New Task':
         return <NewTask theme={theme} />;
       case 'Task Flow':
@@ -598,7 +626,7 @@ const LandingPage = () => {
   <img
     src="/src/assets/sficon.png"
     alt="Salesforce Logo"
-    className="h-8 w-10 rounded-lg"
+    className="h-6 w-7 rounded-lg"
     onError={(e) => {
       console.error('Salesforce logo load error');
     }}
@@ -607,7 +635,7 @@ const LandingPage = () => {
   <img
     src="/src/assets/revcld.png"
     alt="RevCLD Logo"
-    className="h-8 w-10 rounded-lg"
+    className="h-6 w-7 rounded-lg"
     onError={(e) => {
       console.error('RevCLD logo load error');
     }}

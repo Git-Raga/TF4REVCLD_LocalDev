@@ -5,12 +5,11 @@
  
 
 
-TODO // newtask file.jsx
-TODO // built the next nav task.jsx files
-
-
-TODO // create the landing page for User
  
-
-
  
+TODO // Critial logic to display
+TODO // Add the Done, Edit and Delete fucntionalities
+TODO // Done task animation
+TODO // Display all / active tasks dark theme background row color fix
+TODO // Remove APAC and EMEA and have the new AMER team in the user details
+TODO // Side panel to be closed and opened
