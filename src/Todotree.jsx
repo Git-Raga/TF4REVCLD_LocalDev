@@ -7,7 +7,9 @@
 
  
  
-TODO // Critial logic to display
+
+
+TODO // add the total tasks, closed, open , phover in while these and done tixk change
 TODO // Add the Done, Edit and Delete fucntionalities
 TODO // Done task animation
 TODO // Display all / active tasks dark theme background row color fix

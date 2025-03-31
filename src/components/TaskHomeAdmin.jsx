@@ -9,6 +9,10 @@ import {
   ArrowUp,
   Calendar,
   UserCheck,
+  CheckCircle,
+  LayoutList,
+  Clock,
+  ListTodo,
 } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { useTheme } from "./ColorChange";
@@ -18,6 +22,8 @@ const TaskHomeAdmin = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [animatingTaskId, setAnimatingTaskId] = useState(null);
+  const [showActiveOnly, setShowActiveOnly] = useState(true);
 
   // Fetch tasks from database
   useEffect(() => {
@@ -41,6 +47,42 @@ const TaskHomeAdmin = () => {
 
     fetchTasks();
   }, []);
+
+  // Toggle task completion status
+  const toggleTaskCompletion = async (taskId, currentCompletionStatus) => {
+    try {
+      // Set animating state for task
+      setAnimatingTaskId(taskId);
+      
+      // Update the task in the database
+      await databases.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.TASK_DETAILS,
+        taskId,
+        {
+          taskcompleted: !currentCompletionStatus,
+        }
+      );
+      
+      // Update the local state
+      setTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.$id === taskId 
+            ? { ...task, taskcompleted: !currentCompletionStatus } 
+            : task
+        )
+      );
+
+      // Wait for animation to complete before clearing animating state
+      setTimeout(() => {
+        setAnimatingTaskId(null);
+      }, 500);
+      
+    } catch (err) {
+      console.error("Error toggling task completion:", err);
+      setAnimatingTaskId(null);
+    }
+  };
 
   const getInitialsBadge = (initial) => {
     if (!initial) return null;
@@ -75,38 +117,49 @@ const TaskHomeAdmin = () => {
   };
   
   // Determine urgency badge color and text
-  const getUrgencyBadge = (urgency, dueDate) => {
+  const getUrgencyBadge = (urgency, dueDate, isCompleted) => {
     let bgColor, text, flashingClass = "";
  
+    // If task is completed, don't show flashing and use muted colors
+    if (isCompleted) {
+      bgColor = "bg-gray-500";
+      text = urgency === "Critical" ? "CRITICAL" : "NORMAL";
+      return (
+        <div
+          className={`${bgColor} text-white px-3 py-1 rounded text-xs font-bold inline-block text-center w-25 opacity-70`}
+        >
+          {text}
+        </div>
+      );
+    }
     
     // Check if task is late
     const isLate = dueDate && new Date() > new Date(dueDate) && 
                   new Date(dueDate).toDateString() !== new Date().toDateString();
-
     
-  if (urgency === "Critical" && isLate) {
-    bgColor = "bg-red-700"; // Darker, more intense red
-    text = "CRITICAL-LATE";
-    flashingClass = "animate-pulse"; // Add flashing effect
-  } else if (urgency === "Critical") {
-    bgColor = "bg-red-600"; // Medium red
-    text = "CRITICAL";
-  } else if (isLate) {
-    bgColor = "bg-red-500"; // Lighter red
-    text = "NORMAL-LATE";
-  } else {
-    bgColor = "bg-green-600";
-    text = "NORMAL";
-  }
+    if (urgency === "Critical" && isLate) {
+      bgColor = "bg-red-700"; // Darker, more intense red
+      text = "CRITICAL-LATE";
+      flashingClass = "animate-pulse"; // Add flashing effect
+    } else if (urgency === "Critical") {
+      bgColor = "bg-red-600"; // Medium red
+      text = "CRITICAL";
+    } else if (isLate) {
+      bgColor = "bg-red-500"; // Lighter red
+      text = "NORMAL-LATE";
+    } else {
+      bgColor = "bg-green-600";
+      text = "NORMAL";
+    }
 
-  return (
-    <div
-      className={`${bgColor} ${flashingClass} text-white px-3 py-1 rounded text-xs font-bold inline-block text-center w-25`}
-    >
-      {text}
-    </div>
-  );
-};
+    return (
+      <div
+        className={`${bgColor} ${flashingClass} text-white px-3 py-1 rounded text-xs font-bold inline-block text-center w-25`}
+      >
+        {text}
+      </div>
+    );
+  };
 
   // Get task age badge
   const getTaskAgeBadge = (days) => {
@@ -136,15 +189,18 @@ const TaskHomeAdmin = () => {
   };
 
   // Determine task row color based on theme
-  const getRowClass = (index) => {
+  const getRowClass = (index, isCompleted) => {
     // For dark theme, use slightly different shades to distinguish rows
     const evenRow =
       currentTheme.name === "dark" ? 'bg-gray-800' : "bg-gray-200";
     const oddRow = currentTheme.name === "dark" ? "bg-gray-700" : "bg-gray-100";
-
-    return `${
-      index % 2 === 0 ? evenRow : oddRow
-    } hover:bg-opacity-90 transition duration-150 ease-in-out`;
+    
+    const baseClass = index % 2 === 0 ? evenRow : oddRow;
+    
+    // Add disabled styling for completed tasks
+    const completedClass = isCompleted ? 'opacity-30' : '';
+    
+    return `${baseClass} ${completedClass} hover:bg-opacity-90 transition duration-150 ease-in-out`;
   };
 
   // Theme-dependent styles
@@ -157,9 +213,30 @@ const TaskHomeAdmin = () => {
     currentTheme.name === "dark"
       ? "bg-gray-900 rounded-lg shadow-xl overflow-hidden border border-gray-700 max-w-7xl mx-auto table-fixed"
       : "bg-white rounded-lg shadow-xl overflow-hidden border border-gray-200 max-w-7xl mx-auto table-fixed";
+// This sorting logic ensures completed tasks are always at the bottom,
+// while maintaining the other priority rules for active tasks
 
-  // Sort tasks according to requirements
-  const sortedTasks = [...tasks].sort((a, b) => {
+const sortedAndFilteredTasks = [...tasks]
+  // Apply active/all filter
+  .filter(task => !showActiveOnly || !task.taskcompleted)
+  // Sort tasks
+  .sort((a, b) => {
+    // First, separate completed tasks (always push them to the bottom)
+    if (a.taskcompleted && !b.taskcompleted) return 1;  // a goes after b
+    if (!a.taskcompleted && b.taskcompleted) return -1; // a goes before b
+    
+    // If both are completed, sort by creation date (newest first)
+    if (a.taskcompleted && b.taskcompleted) {
+      return new Date(b.$createdAt) - new Date(a.$createdAt);
+    }
+    
+    // Now handle active tasks - prioritize tasks with due dates
+    const aHasDueDate = Boolean(a.taskduedate);
+    const bHasDueDate = Boolean(b.taskduedate);
+    
+    if (aHasDueDate && !bHasDueDate) return -1;
+    if (!aHasDueDate && bHasDueDate) return 1;
+    
     // Helper to determine if task is late
     const isTaskLate = (task) => {
       const dueDate = task.taskduedate ? new Date(task.taskduedate) : null;
@@ -167,19 +244,39 @@ const TaskHomeAdmin = () => {
             dueDate.toDateString() !== new Date().toDateString();
     };
     
-    // Helper to get task priority score (lower number = higher priority)
-    const getPriorityScore = (task) => {
-      if (task.completed) return 6; // Completed tasks last
-      const isLate = isTaskLate(task);
-      
-      if (task.urgency === "Critical" && isLate) return 1; // Critical and late first
-      if (task.urgency !== "Critical" && isLate) return 2; // Normal and late second
-      if (task.urgency === "Critical") return 3; // Critical third
-      return 4; // Normal last
-    };
+    const aIsLate = isTaskLate(a);
+    const bIsLate = isTaskLate(b);
+    const aIsCritical = a.urgency === "Critical";
+    const bIsCritical = b.urgency === "Critical";
     
-    return getPriorityScore(a) - getPriorityScore(b);
+    // Critical and late first
+    if (aIsCritical && aIsLate && !(bIsCritical && bIsLate)) return -1;
+    if (bIsCritical && bIsLate && !(aIsCritical && aIsLate)) return 1;
+    
+    // Normal and late second
+    if (aIsLate && !bIsLate) return -1;
+    if (bIsLate && !aIsLate) return 1;
+    
+    // Critical third
+    if (aIsCritical && !bIsCritical) return -1;
+    if (bIsCritical && !aIsCritical) return 1;
+    
+    // If all else is equal, sort by creation date (newest first)
+    return new Date(b.$createdAt) - new Date(a.$createdAt);
   });
+
+  // Calculate task statistics
+  const taskStats = {
+    total: tasks.length,
+    completed: tasks.filter(task => task.taskcompleted).length,
+    open: tasks.filter(task => !task.taskcompleted).length,
+    overdue: tasks.filter(task => {
+      const dueDate = task.taskduedate ? new Date(task.taskduedate) : null;
+      return !task.taskcompleted && dueDate && 
+        new Date() > dueDate && 
+        dueDate.toDateString() !== new Date().toDateString();
+    }).length
+  };
 
   if (loading) {
     return (
@@ -202,8 +299,8 @@ const TaskHomeAdmin = () => {
           <table className={`w-full table-fixed ${currentTheme.name === "dark" ? "bg-gray-900" : "bg-white"}`}>
             <thead>
               <tr className={headerClass}>
-                <th className="p-3 text-left w-20 whitespace-nowrap">
-                  <div className="flex items-center space-x-2">
+                <th className="p-3 text-right w-20 whitespace-nowrap">
+                  <div className="flex items-center ml-3 space-x-2">
                     <span>Urgency 🔥</span>
                     
                   </div>
@@ -233,14 +330,14 @@ const TaskHomeAdmin = () => {
                   <span>Task Age🗓️</span>
                 </th>
                 <th className="p-3 text-center justify-left w-32 whitespace-nowrap">
-                  <span>Actions 🛠️</span>
+                  <span>Actions ⚙️</span>
                 </th>
               </tr>
             </thead>
           </table>
           
           {/* Scrollable Body */}
-          <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 200px)" }}>
+          <div className="overflow-y-auto" style={{ maxHeight: "calc(100vh - 250px)" }}>
             <table className={`w-full table-fixed ${currentTheme.name === "dark" ? "bg-gray-900" : "bg-white"}`}>
               <colgroup>
                 <col className="w-20" />
@@ -252,7 +349,7 @@ const TaskHomeAdmin = () => {
                 <col className="w-32" />
               </colgroup>
               <tbody>
-                {sortedTasks.length === 0 ? (
+                {sortedAndFilteredTasks.length === 0 ? (
                   <tr>
                     <td
                       colSpan="7"
@@ -262,7 +359,7 @@ const TaskHomeAdmin = () => {
                     </td>
                   </tr>
                 ) : (
-                  sortedTasks.map((task, index) => {
+                  sortedAndFilteredTasks.map((task, index) => {
                     const dueDate = task.taskduedate
                       ? new Date(task.taskduedate)
                       : null;
@@ -271,16 +368,25 @@ const TaskHomeAdmin = () => {
                     const createdAt = new Date(task.$createdAt);
                     const taskAge = differenceInDays(new Date(), createdAt);
 
+                    // Animation classes for task completion
+                    const isAnimating = animatingTaskId === task.$id;
+                    const animationClass = isAnimating 
+                      ? "transition-all ease-in-out duration-1000 transform scale-10 opacity-85" 
+                      : "transition-all duration-2000";
+
                     return (
-                      <tr key={task.$id} className={`${getRowClass(index)} `}>
+                      <tr 
+                        key={task.$id} 
+                        className={`${getRowClass(index, task.taskcompleted)} ${animationClass}`}
+                      >
                         {/* Urgency */}
                         <td className="p-2 whitespace-nowrap w-20">
-                          {getUrgencyBadge(task.urgency, task.taskduedate)}
+                          {getUrgencyBadge(task.urgency, task.taskduedate, task.taskcompleted)}
                         </td>
 
                         {/* Task Details */}
                         <td className="p-3 pl-15 truncate">
-                          <p className={`${currentTheme.text} font-medium`}>
+                          <p className={`${currentTheme.text} text-xl ${task.taskcompleted ? 'line-through' : ''}`}>
                             {task.taskname}
                           </p>
                         </td>
@@ -312,7 +418,7 @@ const TaskHomeAdmin = () => {
 
                         {/* Assigned To */}
                         <td className="p-3">
-                          <div className="flex items-center" style={{ marginLeft: "55px" }}>  {/* Changed from ml-4 (16px) to 19px */}
+                          <div className="flex items-center" style={{ marginLeft: "55px" }}>
                             {getInitialsBadge(task.taskownerinitial)}
                             <span className={`${currentTheme.text} ml-1 text-sm truncate`}>
                               {task.taskownername}
@@ -331,27 +437,37 @@ const TaskHomeAdmin = () => {
                         <td className="p-3 text-right whitespace-nowrap">
                           <div className="flex items-center justify-end space-x-1">
                             <button
-                              className={`p-2 text-green-500 hover:bg-${
+                              className={`p-2 rounded cursor-pointer ${
+                                task.taskcompleted 
+                                  ? currentTheme.name === "dark" ? "text-gray-400" : "text-gray-500" 
+                                  : currentTheme.name === "dark" ? "text-green-400" : "text-green-900"
+                              } ${
                                 currentTheme.name === "dark"
-                                  ? "gray-700"
-                                  : "green-100"
-                              } rounded-full`}
-                              aria-label="Mark complete"
+                                  ? "hover:bg-gray-950 hover:text-white" 
+                                  : "hover:bg-green-900 hover:text-white"
+                              } opacity-100`} // Always show action buttons at full opacity
+                              aria-label={task.taskcompleted ? "Mark incomplete" : "Mark complete"}
+                              onClick={() => toggleTaskCompletion(task.$id, task.taskcompleted)}
+                              disabled={isAnimating}
                             >
                               <Check size={18} />
                             </button>
                             <button
-                              className={`p-2 text-blue-500 hover:bg-${
-                                currentTheme.name === "dark" ? "gray-700" : "blue-100"
-                              } rounded-full`}
+                              className={`p-2 text-blue-500 rounded-full cursor-pointer ${
+                                currentTheme.name === "dark"
+                                  ? "hover:bg-gray-950 hover:text-white" 
+                                  : "hover:bg-blue-900 hover:text-white"
+                              } opacity-100`}
                               aria-label="Edit task"
                             >
                               <Edit size={18} />
                             </button>
                             <button
-                              className={`p-2 text-red-500 hover:bg-${
-                                currentTheme.name === "dark" ? "gray-700" : "red-100"
-                              } rounded-full`}
+                              className={`p-2 text-red-500 rounded-full cursor-pointer ${
+                                currentTheme.name === "dark"
+                                  ? "hover:bg-gray-950 hover:text-white" 
+                                  : "hover:bg-red-600 hover:text-white"
+                              } opacity-100`}
                               aria-label="Delete task"
                             >
                               <Trash2 size={18} />
@@ -364,6 +480,65 @@ const TaskHomeAdmin = () => {
                 )}
               </tbody>
             </table>
+          </div>
+          
+          {/* Task Filters and Statistics Row */}
+          <div className={`p-4 ${currentTheme.name === "dark" ? "bg-gray-800 border-t border-gray-700" : "bg-gray-100 border-t border-gray-300"}`}>
+            <div className="flex justify-between items-center">
+              {/* Task Filters - Left Side */}
+              <div className="flex items-center space-x-6">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="active-tasks"
+                    name="task-filter"
+                    checked={showActiveOnly}
+                    onChange={() => setShowActiveOnly(true)}
+                    className="h-4 w-4 text-blue-600 cursor-pointer"
+                  />
+                  <label htmlFor="active-tasks" className={`${currentTheme.text} text-sm font-medium cursor-pointer`}>
+                    Active Tasks
+                  </label>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="radio"
+                    id="all-tasks"
+                    name="task-filter"
+                    checked={!showActiveOnly}
+                    onChange={() => setShowActiveOnly(false)}
+                    className="h-4 w-4 text-blue-600 cursor-pointer"
+                  />
+                  <label htmlFor="all-tasks" className={`${currentTheme.text} text-sm font-medium cursor-pointer`}>
+                    All Tasks
+                  </label>
+                </div>
+              </div>
+              
+              {/* Task Statistics - Right Side */}
+              <div className="flex flex-wrap items-center space-x-4">
+                <div className="flex items-center space-x-2 text-sm">
+                  <ListTodo size={18} className={currentTheme.name === "dark" ? "text-blue-400" : "text-blue-600"} />
+                  <span className={`${currentTheme.text} font-bold`}>Total : <strong>{taskStats.total}</strong></span>
+                </div>
+                
+                <div className="flex items-center space-x-2 text-sm">
+                  <CheckCircle size={18} className={currentTheme.name === "dark" ? "text-green-400" : "text-green-600"} />
+                  <span className={`${currentTheme.text} font-bold`}>Completed : <strong>{taskStats.completed}</strong></span>
+                </div>
+                
+                <div className="flex items-center space-x-2 text-sm">
+                  <LayoutList size={18} className={currentTheme.name === "dark" ? "text-amber-400" : "text-amber-600"} />
+                  <span className={`${currentTheme.text} font-bold`}>Open : <strong>{taskStats.open}</strong></span>
+                </div>
+                
+                <div className="flex items-center space-x-2 text-sm">
+                  <Clock size={18} className="text-red-500" />
+                  <span className={`${currentTheme.text} font-bold`}>Overdue : <strong>{taskStats.overdue}</strong></span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
