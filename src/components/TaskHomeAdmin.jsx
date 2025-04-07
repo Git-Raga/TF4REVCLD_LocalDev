@@ -31,8 +31,8 @@ const TaskHomeAdmin = () => {
   const [showActiveOnly, setShowActiveOnly] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [sortByDueDate, setSortByDueDate] = useState(false);
-const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
-
+  const [sortDirection, setSortDirection] = useState("asc"); // 'asc' or 'desc'
+  const [sortState, setSortState] = useState('default'); // 'default', 'asc', or 'desc'
   // Modal states
   const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
   const [selectedTaskComments, setSelectedTaskComments] = useState("");
@@ -46,6 +46,21 @@ const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
     taskduedate: "",
     comments: "",
   });
+
+
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+const [deleteTask, setDeleteTask] = useState({ $id: "", taskname: "" });
+const [isDeleting, setIsDeleting] = useState(false);
+
+
+// Add this function to handle opening the delete confirmation modal
+const openDeleteModal = (task) => {
+  setDeleteTask({
+    $id: task.$id,
+    taskname: task.taskname
+  });
+  setIsDeleteModalOpen(true);
+};
 
   // Fetch tasks from database
   useEffect(() => {
@@ -105,14 +120,45 @@ const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
     }
   };
 
+
+
+// Add this function to handle the actual deletion
+const handleDeleteTask = async () => {
+  try {
+    setIsDeleting(true);
+    
+    // Delete the task from the database
+    await databases.deleteDocument(
+      DATABASE_ID,
+      COLLECTIONS.TASK_DETAILS,
+      deleteTask.$id
+    );
+    
+    // Update the local state by filtering out the deleted task
+    setTasks(prevTasks => prevTasks.filter(task => task.$id !== deleteTask.$id));
+    
+    // Wait for animation
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Reset state and close modal
+    setIsDeleting(false);
+    setIsDeleteModalOpen(false);
+  } catch (err) {
+    console.error("Error deleting task:", err);
+    alert("Failed to delete task. Please try again.");
+    setIsDeleting(false);
+  }
+};
+
+
   const handleDueDateClick = () => {
-    if (sortByDueDate) {
-      // If already sorting by due date, toggle direction
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    // Cycle through: default -> ascending -> descending -> default
+    if (sortState === "default") {
+      setSortState("asc");
+    } else if (sortState === "asc") {
+      setSortState("desc");
     } else {
-      // Start sorting by due date
-      setSortByDueDate(true);
-      setSortDirection('asc');
+      setSortState("default");
     }
   };
 
@@ -322,94 +368,108 @@ const [sortDirection, setSortDirection] = useState('asc'); // 'asc' or 'desc'
       ? "bg-gray-900 rounded-lg shadow-xl overflow-hidden border border-gray-700 max-w-7xl mx-auto table-fixed"
       : "bg-white rounded-lg shadow-xl overflow-hidden border border-gray-200 max-w-7xl mx-auto table-fixed";
 
-  // Replace your existing sorting logic with this updated version
-const sortedAndFilteredTasks = [...tasks]
-// Apply active/all filter
-.filter(task => !showActiveOnly || !task.taskcompleted)
-// Sort tasks
-.sort((a, b) => {
-  // Check if we're sorting by due date (when user clicks on Due Date header)
-  if (sortByDueDate) {
-    // Handle cases where one or both tasks don't have due dates
-    if (!a.taskduedate && !b.taskduedate) return 0;
-    if (!a.taskduedate) return 1; // b comes first
-    if (!b.taskduedate) return -1; // a comes first
-    
-    // Compare due dates (ascending or descending based on sortDirection)
-    const dateComparison = new Date(a.taskduedate) - new Date(b.taskduedate);
-    return sortDirection === 'asc' ? dateComparison : -dateComparison;
-  }
-  
-  // First, separate completed tasks (always push them to the bottom)
-  if (a.taskcompleted && !b.taskcompleted) return 1;  // a goes after b
-  if (!a.taskcompleted && b.taskcompleted) return -1; // a goes before b
-  
-  // If both are completed, sort by creation date (newest first)
-  if (a.taskcompleted && b.taskcompleted) {
-    return new Date(b.$createdAt) - new Date(a.$createdAt);
-  }
-  
-  // Helper to determine if task is late
-  const isTaskLate = (task) => {
-    const dueDate = task.taskduedate ? new Date(task.taskduedate) : null;
-    return dueDate && new Date() > dueDate && 
-          dueDate.toDateString() !== new Date().toDateString();
-  };
-  
-  const aIsLate = isTaskLate(a);
-  const bIsLate = isTaskLate(b);
-  const aIsCritical = a.urgency === "Critical";
-  const bIsCritical = b.urgency === "Critical";
-  
-  // 1. Critical and late (group them and display based on oldest Due date)
-  if (aIsCritical && aIsLate && bIsCritical && bIsLate) {
-    // If both are critical and late, sort by due date (oldest first)
-    return new Date(a.taskduedate) - new Date(b.taskduedate);
-  }
-  if (aIsCritical && aIsLate) return -1; // a goes before b
-  if (bIsCritical && bIsLate) return 1;  // b goes before a
-  
-  // 2. Normal and Late (group them and display based on oldest Due date)
-  if (aIsLate && bIsLate && !aIsCritical && !bIsCritical) {
-    // If both are normal and late, sort by due date (oldest first)
-    return new Date(a.taskduedate) - new Date(b.taskduedate);
-  }
-  if (aIsLate && !aIsCritical) return -1; // a goes before b
-  if (bIsLate && !bIsCritical) return 1;  // b goes before a
-  
-  // 3. Critical task with due dates (group them and display based on oldest Due date)
-  if (aIsCritical && a.taskduedate && bIsCritical && b.taskduedate) {
-    // If both are critical with due dates, sort by due date (oldest first)
-    return new Date(a.taskduedate) - new Date(b.taskduedate);
-  }
-  if (aIsCritical && a.taskduedate) return -1; // a goes before b
-  if (bIsCritical && b.taskduedate) return 1;  // b goes before a
-  
-  // 4. Critical task without Due date
-  if (aIsCritical && !a.taskduedate && bIsCritical && !b.taskduedate) {
-    // If both are critical without due dates, sort by creation date (newest first)
-    return new Date(b.$createdAt) - new Date(a.$createdAt);
-  }
-  if (aIsCritical && !a.taskduedate) return -1; // a goes before b
-  if (bIsCritical && !b.taskduedate) return 1;  // b goes before a
-  
-  // 5. Normal task with due dates (group them and display based on oldest Due date)
-  if (!aIsCritical && a.taskduedate && !bIsCritical && b.taskduedate) {
-    // If both are normal with due dates, sort by due date (oldest first)
-    return new Date(a.taskduedate) - new Date(b.taskduedate);
-  }
-  if (!aIsCritical && a.taskduedate) return -1; // a goes before b
-  if (!bIsCritical && b.taskduedate) return 1;  // b goes before a
-  
-  // 6. Normal Tasks (without due dates)
-  if (!aIsCritical && !a.taskduedate && !bIsCritical && !b.taskduedate) {
-    // If both are normal without due dates, sort by creation date (newest first)
-    return new Date(b.$createdAt) - new Date(a.$createdAt);
-  }
-  
-  // If we've made it here, sort by creation date (newest first)
-  return new Date(b.$createdAt) - new Date(a.$createdAt);
-});
+  // Update the sorting logic
+  const sortedAndFilteredTasks = [...tasks]
+    // Apply active/all filter
+    .filter((task) => !showActiveOnly || !task.taskcompleted)
+    // Sort tasks
+    .sort((a, b) => {
+      // Check if we're sorting by due date (when user clicks on Due Date header)
+      if (sortState === "asc" || sortState === "desc") {
+        // First, separate completed tasks (always push them to the bottom)
+        if (a.taskcompleted && !b.taskcompleted) return 1; // a goes after b
+        if (!a.taskcompleted && b.taskcompleted) return -1; // a goes before b
+
+        // If both are completed, sort by creation date (newest first)
+        if (a.taskcompleted && b.taskcompleted) {
+          return new Date(b.$createdAt) - new Date(a.$createdAt);
+        }
+
+        // Handle cases where one or both tasks don't have due dates
+        if (!a.taskduedate && !b.taskduedate) return 0;
+        if (!a.taskduedate) return 1; // b comes first
+        if (!b.taskduedate) return -1; // a comes first
+
+        // Compare due dates (ascending or descending based on sortState)
+        const dateComparison =
+          new Date(a.taskduedate) - new Date(b.taskduedate);
+        return sortState === "asc" ? dateComparison : -dateComparison;
+      }
+
+      // Default sorting logic
+      // First, separate completed tasks (always push them to the bottom)
+      if (a.taskcompleted && !b.taskcompleted) return 1; // a goes after b
+      if (!a.taskcompleted && b.taskcompleted) return -1; // a goes before b
+
+      // If both are completed, sort by creation date (newest first)
+      if (a.taskcompleted && b.taskcompleted) {
+        return new Date(b.$createdAt) - new Date(a.$createdAt);
+      }
+
+      // Helper to determine if task is late
+      const isTaskLate = (task) => {
+        const dueDate = task.taskduedate ? new Date(task.taskduedate) : null;
+        return (
+          dueDate &&
+          new Date() > dueDate &&
+          dueDate.toDateString() !== new Date().toDateString()
+        );
+      };
+
+      const aIsLate = isTaskLate(a);
+      const bIsLate = isTaskLate(b);
+      const aIsCritical = a.urgency === "Critical";
+      const bIsCritical = b.urgency === "Critical";
+
+      // 1. Critical and late (group them and display based on oldest Due date)
+      if (aIsCritical && aIsLate && bIsCritical && bIsLate) {
+        // If both are critical and late, sort by due date (oldest first)
+        return new Date(a.taskduedate) - new Date(b.taskduedate);
+      }
+      if (aIsCritical && aIsLate) return -1; // a goes before b
+      if (bIsCritical && bIsLate) return 1; // b goes before a
+
+      // 2. Normal and Late (group them and display based on oldest Due date)
+      if (aIsLate && bIsLate && !aIsCritical && !bIsCritical) {
+        // If both are normal and late, sort by due date (oldest first)
+        return new Date(a.taskduedate) - new Date(b.taskduedate);
+      }
+      if (aIsLate && !aIsCritical) return -1; // a goes before b
+      if (bIsLate && !bIsCritical) return 1; // b goes before a
+
+      // 3. Critical task with due dates (group them and display based on oldest Due date)
+      if (aIsCritical && a.taskduedate && bIsCritical && b.taskduedate) {
+        // If both are critical with due dates, sort by due date (oldest first)
+        return new Date(a.taskduedate) - new Date(b.taskduedate);
+      }
+      if (aIsCritical && a.taskduedate) return -1; // a goes before b
+      if (bIsCritical && b.taskduedate) return 1; // b goes before a
+
+      // 4. Critical task without Due date
+      if (aIsCritical && !a.taskduedate && bIsCritical && !b.taskduedate) {
+        // If both are critical without due dates, sort by creation date (newest first)
+        return new Date(b.$createdAt) - new Date(a.$createdAt);
+      }
+      if (aIsCritical && !a.taskduedate) return -1; // a goes before b
+      if (bIsCritical && !b.taskduedate) return 1; // b goes before a
+
+      // 5. Normal task with due dates (group them and display based on oldest Due date)
+      if (!aIsCritical && a.taskduedate && !bIsCritical && b.taskduedate) {
+        // If both are normal with due dates, sort by due date (oldest first)
+        return new Date(a.taskduedate) - new Date(b.taskduedate);
+      }
+      if (!aIsCritical && a.taskduedate) return -1; // a goes before b
+      if (!bIsCritical && b.taskduedate) return 1; // b goes before a
+
+      // 6. Normal Tasks (without due dates)
+      if (!aIsCritical && !a.taskduedate && !bIsCritical && !b.taskduedate) {
+        // If both are normal without due dates, sort by creation date (newest first)
+        return new Date(b.$createdAt) - new Date(a.$createdAt);
+      }
+
+      // If we've made it here, sort by creation date (newest first)
+      return new Date(b.$createdAt) - new Date(a.$createdAt);
+    });
 
   // Calculate task statistics
   const taskStats = {
@@ -463,20 +523,30 @@ const sortedAndFilteredTasks = [...tasks]
                 <th className="p-3 text-right  w-20">
                   <span>Notes</span>
                 </th>
-                <th 
-  className="p-3 text-center w-20 whitespace-nowrap cursor-pointer hover:bg-opacity-80"
-  onClick={handleDueDateClick}
->
-  <div className="flex items-center justify-center">
-    <span>Due</span>
-    <Calendar size={14} />
-    {sortByDueDate && (
-      <span className="ml-1">
-        {sortDirection === 'asc' ? '↑' : '↓'}
-      </span>
-    )}
-  </div>
-</th>
+                 
+                <th
+                  className="p-3 text-center w-20 whitespace-nowrap cursor-pointer hover:bg-opacity-80"
+                  onClick={handleDueDateClick}
+                >
+                  <div className="flex items-center justify-center space-x-1">
+                    <span>Due</span>
+                    <Calendar size={14} />
+                    {sortState === "asc" && <ArrowUp size={14} />}
+                    {sortState === "desc" && (
+                      <ArrowUp size={14} className="transform rotate-180" />
+                    )}
+                    {sortState !== "default" && (
+                      <X
+                        size={14}
+                        className="ml-1 text-gray-400 hover:text-red-500"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSortState("default");
+                        }}
+                      />
+                    )}
+                  </div>
+                </th>
                 <th className="p-3 text-center w-23 whitespace-nowrap">
                   <div className="flex items-center justify-center space-x-2">
                     <span>Perfect ⭐</span>
@@ -703,26 +773,123 @@ const sortedAndFilteredTasks = [...tasks]
                             >
                               <Edit size={18} />
                             </button>
-                            <button
-                              className={`p-2 text-red-500 rounded-full cursor-pointer ${
-                                currentTheme.name === "dark"
-                                  ? "hover:bg-gray-950 hover:text-white"
-                                  : "hover:bg-red-600 hover:text-white"
-                              } opacity-100`}
-                              aria-label="Delete task"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
+                            
+                            
+                            
+                            
+                            
+                             
+                          <button
+                            className={`p-2 text-red-500 rounded-full cursor-pointer ${
+                              currentTheme.name === "dark"
+                                ? "hover:bg-gray-950 hover:text-white" 
+                                : "hover:bg-red-600 hover:text-white"
+                            } opacity-100`}
+                            aria-label="Delete task"
+                            onClick={() => openDeleteModal(task)}
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                                                    </div>
                         </td>
                       </tr>
                     );
                   })
                 )}
+
+
+
+
+
+
+
               </tbody>
             </table>
           </div>
 
+          {/* Delete Confirmation Modal */}
+{isDeleteModalOpen && (
+  <>
+    <div 
+      className="fixed inset-0 z-30 pointer-events-none"
+      style={{ backdropFilter: "blur(2px)" }}
+    ></div>
+    <div className="fixed inset-0 flex items-center justify-center z-40 pointer-events-none">
+      <div 
+        className={`${
+          currentTheme.name === "dark" ? "bg-gray-800" : "bg-white"
+        } rounded-lg p-6 max-w-md w-full shadow-2xl pointer-events-auto opacity-95`}
+      >
+        <div className="flex flex-col items-center text-center">
+          <AlertCircle 
+            size={48} 
+            className="text-red-500 mb-4" 
+          />
+          <h3 className={`${currentTheme.text} text-xl font-semibold mb-2`}>
+            Confirm Deletion
+          </h3>
+          <p className={`${currentTheme.text} mb-6`}>
+            Are you sure you want to delete "<span className="font-semibold">{deleteTask.taskname}</span>"?
+            <br />
+            This action cannot be undone.
+          </p>
+          
+          <div className="flex space-x-4">
+            <button
+              onClick={() => setIsDeleteModalOpen(false)}
+              className={`px-4 py-2 rounded ${
+                currentTheme.name === "dark"
+                  ? "bg-gray-700 hover:bg-gray-600"
+                  : "bg-gray-200 hover:bg-gray-300"
+              } ${currentTheme.text}`}
+              disabled={isDeleting}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleDeleteTask}
+              disabled={isDeleting}
+              className={`px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 flex items-center ${
+                isDeleting ? "opacity-70" : ""
+              }`}
+            >
+              {isDeleting ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 size={18} className="mr-2" />
+                  Yes, Delete
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </>
+)}
           {/* Task Filters and Statistics Row */}
           <div
             className={`p-4 ${
@@ -1016,7 +1183,7 @@ const sortedAndFilteredTasks = [...tasks]
               </div>
 
               <div className="mt-6 flex justify-end space-x-3">
-                // Then update the Save button in your Edit Modal
+              
                 <button
                   onClick={saveEditedTask}
                   disabled={isSaving}
