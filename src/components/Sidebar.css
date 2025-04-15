@@ -1,0 +1,15 @@
+/* sidebar.css */
+.sidebar-collapsed {
+    width: 0 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+  }
+  
+  .sidebar-expanded {
+    width: 250px !important;
+    min-width: 250px !important;
+  }
+  
+  .sidebar-transition {
+    transition: all 0.3s ease-in-out;
+  }
