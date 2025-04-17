@@ -32,7 +32,7 @@ const TaskHomeAdmin = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [sortByDueDate, setSortByDueDate] = useState(false);
   const [sortDirection, setSortDirection] = useState("asc"); // 'asc' or 'desc'
-  const [sortState, setSortState] = useState('default'); // 'default', 'asc', or 'desc'
+  const [sortState, setSortState] = useState("default"); // 'default', 'asc', or 'desc'
   // Modal states
   const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
   const [selectedTaskComments, setSelectedTaskComments] = useState("");
@@ -47,20 +47,18 @@ const TaskHomeAdmin = () => {
     comments: "",
   });
 
-
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-const [deleteTask, setDeleteTask] = useState({ $id: "", taskname: "" });
-const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteTask, setDeleteTask] = useState({ $id: "", taskname: "" });
+  const [isDeleting, setIsDeleting] = useState(false);
 
-
-// Add this function to handle opening the delete confirmation modal
-const openDeleteModal = (task) => {
-  setDeleteTask({
-    $id: task.$id,
-    taskname: task.taskname
-  });
-  setIsDeleteModalOpen(true);
-};
+  // Add this function to handle opening the delete confirmation modal
+  const openDeleteModal = (task) => {
+    setDeleteTask({
+      $id: task.$id,
+      taskname: task.taskname,
+    });
+    setIsDeleteModalOpen(true);
+  };
 
   // Fetch tasks from database
   useEffect(() => {
@@ -120,36 +118,35 @@ const openDeleteModal = (task) => {
     }
   };
 
+  // Add this function to handle the actual deletion
+  const handleDeleteTask = async () => {
+    try {
+      setIsDeleting(true);
 
+      // Delete the task from the database
+      await databases.deleteDocument(
+        DATABASE_ID,
+        COLLECTIONS.TASK_DETAILS,
+        deleteTask.$id
+      );
 
-// Add this function to handle the actual deletion
-const handleDeleteTask = async () => {
-  try {
-    setIsDeleting(true);
-    
-    // Delete the task from the database
-    await databases.deleteDocument(
-      DATABASE_ID,
-      COLLECTIONS.TASK_DETAILS,
-      deleteTask.$id
-    );
-    
-    // Update the local state by filtering out the deleted task
-    setTasks(prevTasks => prevTasks.filter(task => task.$id !== deleteTask.$id));
-    
-    // Wait for animation
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Reset state and close modal
-    setIsDeleting(false);
-    setIsDeleteModalOpen(false);
-  } catch (err) {
-    console.error("Error deleting task:", err);
-    alert("Failed to delete task. Please try again.");
-    setIsDeleting(false);
-  }
-};
+      // Update the local state by filtering out the deleted task
+      setTasks((prevTasks) =>
+        prevTasks.filter((task) => task.$id !== deleteTask.$id)
+      );
 
+      // Wait for animation
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Reset state and close modal
+      setIsDeleting(false);
+      setIsDeleteModalOpen(false);
+    } catch (err) {
+      console.error("Error deleting task:", err);
+      alert("Failed to delete task. Please try again.");
+      setIsDeleting(false);
+    }
+  };
 
   const handleDueDateClick = () => {
     // Cycle through: default -> ascending -> descending -> default
@@ -523,7 +520,7 @@ const handleDeleteTask = async () => {
                 <th className="p-3 text-right  w-20">
                   <span>Notes</span>
                 </th>
-                 
+
                 <th
                   className="p-3 text-center w-20 whitespace-nowrap cursor-pointer hover:bg-opacity-80"
                   onClick={handleDueDateClick}
@@ -578,15 +575,14 @@ const handleDeleteTask = async () => {
               }`}
             >
               <colgroup>
-                <col className="w-20" /> {/* Urgency */}
-                <col className="w-109" /> {/* Task Details */}
-                <col className="w-15" />{" "}
-                {/* Comments - reduced from w-32 to w-16 */}
-                <col className="w-20" /> {/* Due Date */}
-                <col className="w-20" /> {/* Star */}
-                <col className="w-40" /> {/* Assigned to */}
-                <col className="w-20" /> {/* Task Age */}
-                <col className="w-32" /> {/* Actions */}
+                <col className="w-20"/>
+                <col className="w-109"/>
+                <col className="w-15"/>
+                <col className="w-20"/>
+                <col className="w-20"/>
+                <col className="w-40"/>
+                <col className="w-20"/>
+                <col className="w-32"/>
               </colgroup>
               <tbody>
                 {sortedAndFilteredTasks.length === 0 ? (
@@ -773,123 +769,114 @@ const handleDeleteTask = async () => {
                             >
                               <Edit size={18} />
                             </button>
-                            
-                            
-                            
-                            
-                            
-                             
-                          <button
-                            className={`p-2 text-red-500 rounded-full cursor-pointer ${
-                              currentTheme.name === "dark"
-                                ? "hover:bg-gray-950 hover:text-white" 
-                                : "hover:bg-red-600 hover:text-white"
-                            } opacity-100`}
-                            aria-label="Delete task"
-                            onClick={() => openDeleteModal(task)}
-                          >
-                            <Trash2 size={18} />
-                          </button>
-                                                    </div>
+
+                            <button
+                              className={`p-2 text-red-500 rounded-full cursor-pointer ${
+                                currentTheme.name === "dark"
+                                  ? "hover:bg-gray-950 hover:text-white"
+                                  : "hover:bg-red-600 hover:text-white"
+                              } opacity-100`}
+                              aria-label="Delete task"
+                              onClick={() => openDeleteModal(task)}
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
                   })
                 )}
-
-
-
-
-
-
-
               </tbody>
             </table>
           </div>
 
           {/* Delete Confirmation Modal */}
-{isDeleteModalOpen && (
-  <>
-    <div 
-      className="fixed inset-0 z-30 pointer-events-none"
-      style={{ backdropFilter: "blur(2px)" }}
-    ></div>
-    <div className="fixed inset-0 flex items-center justify-center z-40 pointer-events-none">
-      <div 
-        className={`${
-          currentTheme.name === "dark" ? "bg-gray-800" : "bg-white"
-        } rounded-lg p-6 max-w-md w-full shadow-2xl pointer-events-auto opacity-95`}
-      >
-        <div className="flex flex-col items-center text-center">
-          <AlertCircle 
-            size={48} 
-            className="text-red-500 mb-4" 
-          />
-          <h3 className={`${currentTheme.text} text-xl font-semibold mb-2`}>
-            Confirm Deletion
-          </h3>
-          <p className={`${currentTheme.text} mb-6`}>
-            Are you sure you want to delete "<span className="font-semibold">{deleteTask.taskname}</span>"?
-            <br />
-            This action cannot be undone.
-          </p>
-          
-          <div className="flex space-x-4">
-            <button
-              onClick={() => setIsDeleteModalOpen(false)}
-              className={`px-4 py-2 rounded ${
-                currentTheme.name === "dark"
-                  ? "bg-gray-700 hover:bg-gray-600"
-                  : "bg-gray-200 hover:bg-gray-300"
-              } ${currentTheme.text}`}
-              disabled={isDeleting}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleDeleteTask}
-              disabled={isDeleting}
-              className={`px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 flex items-center ${
-                isDeleting ? "opacity-70" : ""
-              }`}
-            >
-              {isDeleting ? (
-                <>
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  Deleting...
-                </>
-              ) : (
-                <>
-                  <Trash2 size={18} className="mr-2" />
-                  Yes, Delete
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </>
-)}
+          {isDeleteModalOpen && (
+            <>
+              <div
+                className="fixed inset-0 z-30 pointer-events-none"
+                style={{ backdropFilter: "blur(2px)" }}
+              ></div>
+              <div className="fixed inset-0 flex items-center justify-center z-40 pointer-events-none">
+                <div
+                  className={`${
+                    currentTheme.name === "dark" ? "bg-gray-800" : "bg-white"
+                  } rounded-lg p-6 max-w-md w-full shadow-2xl pointer-events-auto opacity-95`}
+                >
+                  <div className="flex flex-col items-center text-center">
+                    <AlertCircle size={48} className="text-red-500 mb-4" />
+                    <h3
+                      className={`${currentTheme.text} text-xl font-semibold mb-2`}
+                    >
+                      Confirm Deletion
+                    </h3>
+                    <p className={`${currentTheme.text} mb-6`}>
+                      Are you sure you want to delete "
+                      <span className="font-semibold">
+                        {deleteTask.taskname}
+                      </span>
+                      "?
+                      <br />
+                      This action cannot be undone.
+                    </p>
+
+                    <div className="flex space-x-4">
+                      <button
+                        onClick={() => setIsDeleteModalOpen(false)}
+                        className={`px-4 py-2 rounded ${
+                          currentTheme.name === "dark"
+                            ? "bg-gray-700 hover:bg-gray-600"
+                            : "bg-gray-200 hover:bg-gray-300"
+                        } ${currentTheme.text}`}
+                        disabled={isDeleting}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleDeleteTask}
+                        disabled={isDeleting}
+                        className={`px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 flex items-center ${
+                          isDeleting ? "opacity-70" : ""
+                        }`}
+                      >
+                        {isDeleting ? (
+                          <>
+                            <svg
+                              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
+                            </svg>
+                            Deleting...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 size={18} className="mr-2" />
+                            Yes, Delete
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
           {/* Task Filters and Statistics Row */}
           <div
             className={`p-4 ${
@@ -1183,7 +1170,6 @@ const handleDeleteTask = async () => {
               </div>
 
               <div className="mt-6 flex justify-end space-x-3">
-              
                 <button
                   onClick={saveEditedTask}
                   disabled={isSaving}

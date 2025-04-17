@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useTheme } from './ColorChange';  // Keep this import
+import { useTheme } from './ColorChange';
 import NewTask from './NewTask'
-import TaskHomeUser  from './TaskHomeUser'; // Regular user home component
-import TaskHomeAdmin from './TaskHomeAdmin'; // Admin user home component
+import TaskHomeUser from './TaskHomeUser';
+import TaskHomeAdmin from './TaskHomeAdmin';
 import { 
   Home, 
   Grid, 
@@ -18,7 +18,10 @@ import {
   Import,
   Wrench,
   CirclePlus, 
-  Workflow
+  Workflow,
+  ChevronLeft,
+  ChevronRight,
+  Menu
 } from 'lucide-react';
 import FontConfig from './FontConfig';
 import { useNavigate } from 'react-router-dom';
@@ -103,8 +106,6 @@ const ThemeToggle = () => {
           `}></span>
         </span>
       </button>
-      
-      
     </div>
   );
 };
@@ -126,37 +127,38 @@ const UserAvatar = ({ name, initials }) => {
   );
 };
 
-
-
 // NavItem component
-const NavItem = ({ icon, text, active, onClick, theme }) => {
+const NavItem = ({ icon, text, active, onClick, theme, isCollapsed }) => {
   // Get the color based on active state
   const textColorClass = active ? theme.activeNavItemText : theme.navItemText;
   
   return (
     <div 
-      className={`flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer ${
+      className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} px-3 py-2 rounded-lg cursor-pointer ${
         active ? theme.activeNavItem : theme.navItem
       }`}
       onClick={onClick}
+      title={isCollapsed ? text : ''}
     >
       {/* Clone the icon element and pass the appropriate color */}
       {React.cloneElement(icon, { 
         className: textColorClass,
         color: active ? (theme.name === 'dark' ? 'black' : 'white') : (theme.name === 'dark' ? '#9CA3AF' : '#4B5563')
       })}
-      <span className={textColorClass}>{text}</span>
+      {!isCollapsed && <span className={textColorClass}>{text}</span>}
     </div>
   );
 };
 
 // SubNavItem component
-const SubNavItem = ({ text, theme, onClick }) => (
+const SubNavItem = ({ text, theme, onClick, isCollapsed }) => (
   <div 
-    className={`flex items-center space-x-3 px-3 py-2 pl-11 rounded-lg cursor-pointer ${theme.navItem}`}
+    className={`flex  ${isCollapsed ? 'justify-center' : 'space-x-3'} px-3 py-2 ${isCollapsed ? 'pl-3' : 'pl-11'} rounded-lg cursor-pointer ${theme.navItem}`}
     onClick={onClick}
+    title={isCollapsed ? text : ''}
   >
-    <span className={`${theme.navItemText} text-sm`}>{text}</span>
+    {!isCollapsed && <span className={`${theme.navItemText} text-sm`}>{text}</span>}
+    {isCollapsed && <span className={`${theme.navItemText} text-sm`}>🔑</span>}
   </div>
 );
 
@@ -175,8 +177,6 @@ const HomeContent = ({ theme }) => (
     </div>
   </div>
 );
-
-
 
 const TaskFlowContent = ({ theme }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -203,8 +203,6 @@ const TaskFlowContent = ({ theme }) => {
     </div>
   );
 };
-
-
 
 const DashboardContent = ({ theme }) => (
   <div className={`p-6 ${theme.text}`}>
@@ -333,20 +331,20 @@ const LogoutContent = ({ theme, onConfirm, onCancel }) => (
   </div>
 );
 
-
-
-
 const LandingPage = () => {
   const navigate = useNavigate();
   const [showSettings, setShowSettings] = useState(false);
-  // FIX: Correct destructuring of useTheme hook
   const { currentTheme, isDarkTheme, toggleTheme } = useTheme();
   const [userData, setUserData] = useState(null);
   const [activeNavItem, setActiveNavItem] = useState('Home');
   const [userRole, setUserRole] = useState('User'); // Default to User role
+  
+  // Add sidebar collapsed state
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-
-
+  const toggleSidebar = () => {
+    setSidebarCollapsed(prev => !prev);
+  };
 
   const renderHomeContent = () => {
     // Check if user is Admin or SuperAdmin
@@ -357,7 +355,6 @@ const LandingPage = () => {
       return <TaskHomeUser theme={theme} />;
     }
   };
-
 
   // Add button theme and input background to currentTheme
   const theme = {
@@ -388,8 +385,6 @@ const LandingPage = () => {
         console.error('Error parsing user data:', error);
       }
     };
-
-
 
     // Delay the execution to ensure connection listeners are set up first
     setTimeout(loadUserData, 0);
@@ -464,8 +459,33 @@ const LandingPage = () => {
 
   return (
     <div className={`flex h-screen ${currentTheme.background}`}>
+      {/* Sidebar Toggle Button (Mobile) */}
+      <div className="md:hidden absolute top-4 left-4 z-20">
+        <button 
+          onClick={toggleSidebar}
+          className={`p-2 rounded-full ${currentTheme.name === 'dark' ? 'bg-gray-800 text-white' : 'bg-white text-gray-800'} shadow-lg`}
+        >
+          <Menu size={20} />
+        </button>
+      </div>
+
       {/* Sidebar - Fixed width with boat.jpg background */}
-      <div className={`w-64 ${currentTheme.sidebar} border-r ${currentTheme.borderColor} p-4 relative overflow-hidden`}>
+      <div 
+        className={`
+          ${sidebarCollapsed ? 'w-20' : 'w-64'} 
+          ${currentTheme.sidebar} 
+          border-r ${currentTheme.borderColor} 
+          p-4 
+          relative 
+          overflow-hidden
+          transition-all duration-300 ease-in-out
+          ${sidebarCollapsed ? 'md:w-19' : 'md:w-64'}
+          ${sidebarCollapsed ? '-translate-x-full md:translate-x-0' : 'translate-x-0'}
+          absolute md:relative
+          h-full
+          z-10
+        `}
+      >
         {/* Background boat image with 50% opacity */}
         <img 
           src="/src/assets/boat.jpg" 
@@ -476,29 +496,68 @@ const LandingPage = () => {
             objectPosition: 'center'
           }}
         />
-
-        {/* Content in foreground */}
-        <div className="relative z-10 flex flex-col h-full">
-          {/* User Profile */}
-          <div className="flex items-center space-x-3 mb-8">
-            <UserAvatar 
-              name={userData?.username || userData?.useremail || 'Unknown User'}
-              initials={userData?.initials}
-            />
-            <div>
-              <h3 className={`${currentTheme.text} text-sm font-medium`}>
-                {userData?.username || userData?.useremail || 'User'}
-              </h3>
-              <p className={`${currentTheme.mutedText} text-sm`}>
-                {userData?.role || 'No Role Assigned'}
-              </p>
-            </div>
-          </div>
+{/* Content in foreground */}
+<div className="relative z-10 flex flex-col h-full">
+  {/* User Profile with horizontal layout */}
+  <div className="flex flex-col mb-6">
+    {/* User info row */}
+    <div className="flex items-center mb-3">
+      {/* User Avatar */}
+      <UserAvatar 
+        name={userData?.username || userData?.useremail || 'Unknown User'}
+        initials={userData?.initials}
+      />
+      
+      {/* User Info - only show when sidebar is expanded */}
+      {!sidebarCollapsed && (
+        <div className="ml-3">
+          <h3 className={`${currentTheme.text} text-sm font-medium`}>
+            {userData?.username || userData?.useremail || 'User'}
+          </h3>
+          <p className={`${currentTheme.mutedText} text-xs`}>
+            {userData?.role || 'No Role Assigned'}
+          </p>
+        </div>
+      )}
+    </div>
+    
+   {/* Chevron Toggle Button - centered below the profile row */}
+<div className="flex justify-left">
+  <button 
+    onClick={toggleSidebar}
+    className={`
+      p-2 
+      rounded-full 
+      transition-colors 
+      duration-200 
+      border-2 
+      ${currentTheme.name === 'dark' 
+        ? 'border-gray-300 hover:bg-gray-700' 
+        : 'border-gray-700 hover:bg-gray-200'
+      }
+    `}
+    aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+  >
+    {sidebarCollapsed ? (
+      <ChevronRight 
+        size={16} 
+        className={currentTheme.text} 
+      />
+    ) : (
+      <ChevronLeft 
+        size={16} 
+        className={currentTheme.text} 
+      />
+    )}
+  </button>
+</div>
+  </div>
+  
+  {/* Divider line */}
+  <div className={`h-[1px] ${currentTheme.divider} mb-2`}></div>
           
-          {/* Divider line */}
-          <div className={`h-[1px] ${currentTheme.divider} mb-2`}></div>
           {/* Theme Toggle */}
-          <div className="mb-4">
+          <div className={`mb-4 ${sidebarCollapsed ? 'flex justify-center' : ''}`}>
             <ThemeToggle />
           </div>
 
@@ -510,6 +569,7 @@ const LandingPage = () => {
               theme={currentTheme} 
               active={activeNavItem === 'Home'}
               onClick={() => handleNavItemClick('Home')}
+              isCollapsed={sidebarCollapsed}
             />
             <NavItem 
               icon={<CirclePlus size={20} />} 
@@ -517,6 +577,7 @@ const LandingPage = () => {
               theme={currentTheme} 
               active={activeNavItem === 'New Task'}
               onClick={() => handleNavItemClick('New Task')}
+              isCollapsed={sidebarCollapsed}
             />
             <NavItem 
               icon={<Workflow size={20} />} 
@@ -524,6 +585,7 @@ const LandingPage = () => {
               theme={currentTheme} 
               active={activeNavItem === 'Task Flow'}
               onClick={() => handleNavItemClick('Task Flow')}
+              isCollapsed={sidebarCollapsed}
             />
             
             <NavItem 
@@ -532,6 +594,7 @@ const LandingPage = () => {
               theme={currentTheme} 
               active={activeNavItem === 'Dashboard'}
               onClick={() => handleNavItemClick('Dashboard')}
+              isCollapsed={sidebarCollapsed}
             />
             <NavItem 
               icon={<Star size={20} />} 
@@ -539,6 +602,7 @@ const LandingPage = () => {
               theme={currentTheme} 
               active={activeNavItem === 'Perfect ⭐'}
               onClick={() => handleNavItemClick('Perfect ⭐')}
+              isCollapsed={sidebarCollapsed}
             />
             
             <>
@@ -548,12 +612,14 @@ const LandingPage = () => {
                 onClick={handleSettingsClick}
                 active={activeNavItem === 'Settings'}
                 theme={currentTheme}
+                isCollapsed={sidebarCollapsed}
               />
               {showSettings && (
                 <SubNavItem 
-                  text="🔑 Change Password" 
+                  text="Change Password" 
                   theme={currentTheme} 
                   onClick={() => handleNavItemClick('Change Password')}
+                  isCollapsed={sidebarCollapsed}
                 />
               )}
               <NavItem 
@@ -562,6 +628,7 @@ const LandingPage = () => {
                 onClick={handlesupportticket} 
                 theme={currentTheme} 
                 active={activeNavItem === 'Tech Support'}
+                isCollapsed={sidebarCollapsed}
               />
 
               <NavItem 
@@ -570,82 +637,92 @@ const LandingPage = () => {
                 onClick={handleLogout} 
                 theme={currentTheme} 
                 active={activeNavItem === 'Logout'}
+                isCollapsed={sidebarCollapsed}
               />
             </>
           </nav>
           
          {/* Footer */}
-<div className="mt-auto pt-4">
-  <div className={`h-[1px] ${currentTheme.divider} mb-3`}></div>
-  <div className="flex flex-col items-center text-center">
-    <div className="relative group">
-      <div 
-        className={`${currentTheme.mutedText} text-xs cursor-pointer hover:text-blue-500 transition-colors duration-200`}
-      >
-        © {new Date().getFullYear()} FreeMind.Works..🦋
-      </div>
-      {/* Custom tooltip that appears on hover */}
-      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
-        Built using AI by Raghav
-      </div>
-    </div>
-    <div className={`${currentTheme.mutedText} text-xs mt-1`}>
-      Ver 1.0
-    </div>
-  </div>
-</div>
-
+          <div className="mt-auto pt-4">
+            <div className={`h-[1px] ${currentTheme.divider} mb-3`}></div>
+            {!sidebarCollapsed ? (
+              <div className="flex flex-col items-center text-center">
+                <div className="relative group">
+                  <div 
+                    className={`${currentTheme.mutedText} text-xs cursor-pointer hover:text-blue-500 transition-colors duration-200`}
+                  >
+                    © {new Date().getFullYear()} FreeMind.Works..🦋
+                  </div>
+                  {/* Custom tooltip that appears on hover */}
+                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                    Built using AI by Raghav
+                  </div>
+                </div>
+                <div className={`${currentTheme.mutedText} text-xs mt-1`}>
+                  Ver 1.0
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-center">
+                <div className={`${currentTheme.mutedText} text-xs`}>🦋</div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-     {/* Right side header */}
-<div className={`flex-1 p-3 ${currentTheme.background} overflow-auto`}>
-  {/* Header with RevCLD logo on right and centered title */}
-  <div className={`relative flex items-center border-b ${currentTheme.borderColor} py-2 px-4`}>
-    {/* Empty div on left for balance */}
-    <div className="w-12"></div>
-    
-    {/* Centered title container */}
-    <div className="flex-1 flex justify-center items-center">
-      <div className="text-center ">
-        <h1 className={`text-4xl font-semibold ${currentTheme.text}`}>
-          TaskForce <span className="inline-block animate-pulse">⚡</span>
-        </h1>
-        <p className={`text-sm ${currentTheme.mutedText}`}>
-          Every TASK, brings you the opportunity to LEARN and ESTABLISH something...
-        </p>
-      </div>
-    </div>
-    
-{/* RevCLD Logo in the top right corner */}
-<>
-<div className={`
-  p-1 rounded-xl flex items-center space-x-2
-  ${currentTheme.name === 'dark' ? 'border   border-white' : 'border   border-gray-900'}
-`}>
-  <img
-    src="/src/assets/sficon.png"
-    alt="Salesforce Logo"
-    className="h-6 w-7 rounded-lg"
-    onError={(e) => {
-      console.error('Salesforce logo load error');
-    }}
-  />
-  
-  <img
-    src="/src/assets/revcld.png"
-    alt="RevCLD Logo"
-    className="h-6 w-7 rounded-lg"
-    onError={(e) => {
-      console.error('RevCLD logo load error');
-    }}
-  />
-</div>
-  </>
+      {/* Overlay for mobile when sidebar is open */}
+      {!sidebarCollapsed && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-0 md:hidden"
+          onClick={toggleSidebar}
+        ></div>
+      )}
 
- 
-</div>
-        
+      {/* Main Content */}
+      <div className={`flex-1 p-3 ${currentTheme.background} overflow-auto transition-all duration-300 ease-in-out`}>
+        {/* Header with RevCLD logo on right and centered title */}
+        <div className={`relative flex items-center border-b ${currentTheme.borderColor} py-2 px-4`}>
+          {/* Empty div on left for balance */}
+          <div className="w-12"></div>
+          
+          {/* Centered title container */}
+          <div className="flex-1 flex justify-center items-center">
+            <div className="text-center">
+              <h1 className={`text-4xl font-semibold ${currentTheme.text}`}>
+                TaskForce <span className="inline-block animate-pulse">⚡</span>
+              </h1>
+              <p className={`text-sm ${currentTheme.mutedText}`}>
+                Every TASK, brings you the opportunity to LEARN and ESTABLISH something...
+              </p>
+            </div>
+          </div>
+          
+          {/* RevCLD Logo in the top right corner */}
+          <div className={`
+            p-1 rounded-xl flex items-center space-x-2
+            ${currentTheme.name === 'dark' ? 'border border-white' : 'border border-gray-900'}
+          `}>
+            <img
+              src="/src/assets/sficon.png"
+              alt="Salesforce Logo"
+              className="h-6 w-7 rounded-lg"
+              onError={(e) => {
+                console.error('Salesforce logo load error');
+              }}
+            />
+            
+            <img
+              src="/src/assets/revcld.png"
+              alt="RevCLD Logo"
+              className="h-6 w-7 rounded-lg"
+              onError={(e) => {
+                console.error('RevCLD logo load error');
+              }}
+            />
+          </div>
+        </div>
+          
         {/* Dynamic Display Area */}
         <div className={`p-4 ${activeNavItem === 'Task Flow' ? 'h-[calc(100vh-140px)] flex justify-center items-center' : ''}`}>
           {renderContent()}
