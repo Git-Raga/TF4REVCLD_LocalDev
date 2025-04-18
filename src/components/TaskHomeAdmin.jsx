@@ -498,7 +498,7 @@ const TaskHomeAdmin = () => {
 
   return (
     <div className="overflow-x-auto">
-      <div className="relative max-w-7xl mx-auto">
+  <div className="relative max-w-full mx-auto"> {/* Change from max-w-7xl to max-w-full */}
         {/* Fixed Header Table */}
         <div className="overflow-hidden rounded-lg shadow-xl border border-gray-700">
           {/* Header */}
@@ -517,7 +517,7 @@ const TaskHomeAdmin = () => {
                 <th className="p-3 text-left pl-15 w-113">
                   <span>Task Details 📃</span>
                 </th>
-                <th className="p-3 text-right  w-20">
+                <th className="p-2  w-20">
                   <span>Notes</span>
                 </th>
 
@@ -557,7 +557,7 @@ const TaskHomeAdmin = () => {
                 <th className="p-3 text-center w-24 whitespace-nowrap">
                   <span>Task Age🗓️</span>
                 </th>
-                <th className="p-3 text-center justify-left w-32 whitespace-nowrap">
+                <th className="p-3 text-right mr--2 w-32 whitespace-nowrap">
                   <span>Actions ⚙️</span>
                 </th>
               </tr>
@@ -575,15 +575,15 @@ const TaskHomeAdmin = () => {
               }`}
             >
               <colgroup>
-                <col className="w-20"/>
-                <col className="w-109"/>
-                <col className="w-15"/>
-                <col className="w-20"/>
-                <col className="w-20"/>
-                <col className="w-40"/>
-                <col className="w-20"/>
-                <col className="w-32"/>
-              </colgroup>
+              <col className="w-20"/>
+              <col className="w-109"/>
+              <col className="w-15"/>
+              <col className="w-20"/>
+              <col className="w-20"/>
+              <col className="w-40"/>
+              <col className="w-20"/>
+              <col className="w-32"/>
+            </colgroup>
               <tbody>
                 {sortedAndFilteredTasks.length === 0 ? (
                   <tr>
