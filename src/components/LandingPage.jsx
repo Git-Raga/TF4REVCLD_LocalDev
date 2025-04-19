@@ -472,14 +472,14 @@ const LandingPage = () => {
       {/* Sidebar - Fixed width with boat.jpg background */}
       <div 
         className={`
-          ${sidebarCollapsed ? 'w-20' : 'w-64'} 
+          ${sidebarCollapsed ? 'w-16' : 'w-64'} 
           ${currentTheme.sidebar} 
           border-r ${currentTheme.borderColor} 
           p-4 
           relative 
           overflow-hidden
           transition-all duration-300 ease-in-out
-          ${sidebarCollapsed ? 'md:w-19' : 'md:w-64'}
+          ${sidebarCollapsed ? 'md:w-20' : 'md:w-48'}
           ${sidebarCollapsed ? '-translate-x-full md:translate-x-0' : 'translate-x-0'}
           absolute md:relative
           h-full
