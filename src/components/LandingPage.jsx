@@ -21,7 +21,9 @@ import {
   Workflow,
   ChevronLeft,
   ChevronRight,
-  Menu
+  CalendarSync,
+  Menu,
+  CheckCheck 
 } from 'lucide-react';
 import FontConfig from './FontConfig';
 import { useNavigate } from 'react-router-dom';
@@ -564,13 +566,24 @@ const LandingPage = () => {
           {/* Navigation */}
           <nav className="space-y-3 flex-grow">
             <NavItem 
-              icon={<Home size={20} />} 
-              text="Home" 
+              icon={<CheckCheck  size={20} />} 
+              text="Onetime" 
               theme={currentTheme} 
               active={activeNavItem === 'Home'}
               onClick={() => handleNavItemClick('Home')}
               isCollapsed={sidebarCollapsed}
             />
+
+              <NavItem 
+              icon={<CalendarSync size={20} />} 
+              text="Recurring" 
+              theme={currentTheme} 
+              active={activeNavItem === 'reoccur'}
+              onClick={() => handleNavItemClick('reoccur')}
+              isCollapsed={sidebarCollapsed}
+            />
+            <div className={`my-5 border-0 border-b-1 border-line ${currentTheme.name === 'dark' ? 'border-gray-500' : 'border-gray-400'} mx-2`}></div>
+
             <NavItem 
               icon={<CirclePlus size={20} />} 
               text="New Task" 

@@ -248,7 +248,7 @@ const TableDisplay = ({
 
                     {/* Assigned To */}
                     <td className="p-2">
-                      <div className="flex items-center ml-5">
+                      <div className="flex items-center ml-8">
                         {getInitialsBadge(task.taskownerinitial)}
                         <span
                           className={`${currentTheme.text} ml-1 text-sm truncate`}
@@ -259,7 +259,7 @@ const TableDisplay = ({
                     </td>
 
                     {/* Task Age */}
-                    <td className="p-2 text-center">
+                    <td className="p-2 text-center ml-10">
                       <div className="flex justify-center">
                         {getTaskAgeBadge(taskAge)}
                       </div>

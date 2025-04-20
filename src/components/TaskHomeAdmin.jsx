@@ -318,19 +318,20 @@ const TaskHomeAdmin = () => {
     );
   };
 
-  // Get task age badge
-  const getTaskAgeBadge = (days) => {
-    return (
-      <div
-        className={`${
-          currentTheme.name === "dark" ? "bg-gray-950" : "bg-gray-800"
-        } text-white px-3 py-1 rounded inline-block text-center w-24`}
-      >
-        {days} Days
-      </div>
-    );
-  };
-
+// Get task age badge
+const getTaskAgeBadge = (days) => {
+  return (
+    <div
+      className={`${
+        currentTheme.name === "dark" 
+          ? "bg-gray-200 text-gray-900" 
+          : "bg-gray-800 text-white"
+      } px-3 py-1 rounded inline-block text-center w-20 rounded-xl`}
+    >
+      {days} Days
+    </div>
+  );
+};
   // Get due date badge
   const getDueDateBadge = (dueDate) => {
     if (!dueDate) return null;

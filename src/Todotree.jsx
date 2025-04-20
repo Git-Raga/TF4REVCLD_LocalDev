@@ -8,10 +8,20 @@
  
  
 
-
+TODO // Build the one timem and recurring task logic
+// rotation animation
+// page to land in one time or the recurring after saving/animation
  
  
  
+TODO // BUild the UserView 
+TODO // Only Admin users can create tasks
 TODO // Logic to Done to Complete section 
-TODO // sorting based on Due date - font size to fix
+
+TODO // build the bashboard logic
+TODO // build the perfect 5 task only display
+TODO // Move password as a okta button inside settings tab
+TODO // bulild tech support DB
+ 
+
  
