@@ -29,6 +29,7 @@ const TableDisplay = ({
   getDueDateBadge,
   getTaskAgeBadge,
   getRowClass,
+  showActiveOnly
 }) => {
   // Theme-dependent styles
   const headerClass =
@@ -46,10 +47,10 @@ const TableDisplay = ({
       >
         <colgroup>
           <col className="w-20" />
-          <col className="w-1/3" />
+          <col className={showActiveOnly ? "w-2/5" : "w-1/3"} />
           <col className="w-12" />
           <col className="w-20" />
-          <col className="w-20" />
+          {!showActiveOnly && <col className="w-20" />}
           <col className="w-40" />
           <col className="w-24" />
           <col className="w-32" />
@@ -90,11 +91,13 @@ const TableDisplay = ({
                 )}
               </div>
             </th>
-            <th className="p-3 text-center whitespace-nowrap">
-              <div className="flex items-center justify-center space-x-2">
-                <span>Perfect ⭐</span>
-              </div>
-            </th>
+            {!showActiveOnly && (
+              <th className="p-3 text-center whitespace-nowrap">
+                <div className="flex items-center justify-center space-x-2">
+                  <span>Perfect ⭐</span>
+                </div>
+              </th>
+            )}
             <th className="p-3 whitespace-nowrap">
               <div className="flex items-center pl-5 justify-start space-x-3">
                 <span>Assigned to 🙋</span>
@@ -122,10 +125,10 @@ const TableDisplay = ({
         >
           <colgroup>
             <col className="w-20" />
-            <col className="w-1/3" />
+            <col className={showActiveOnly ? "w-2/5" : "w-1/3"} />
             <col className="w-12" />
             <col className="w-20" />
-            <col className="w-20" />
+            {!showActiveOnly && <col className="w-20" />}
             <col className="w-40" />
             <col className="w-24" />
             <col className="w-32" />
@@ -134,7 +137,7 @@ const TableDisplay = ({
             {sortedAndFilteredTasks.length === 0 ? (
               <tr>
                 <td
-                  colSpan="8"
+                  colSpan={showActiveOnly ? "7" : "8"}
                   className={`text-center py-10 ${currentTheme.text}`}
                 >
                   No tasks found.
@@ -162,7 +165,7 @@ const TableDisplay = ({
                     className={`${getRowClass(
                       index,
                       task.taskcompleted
-                    )} ${animationClass} `}
+                    )} ${animationClass} h-12`}
                   >
                     {/* Urgency */}
                     <td className="p-2 whitespace-nowrap w-20">
@@ -227,19 +230,21 @@ const TableDisplay = ({
                       </div>
                     </td>
 
-                    {/* Perfect Star */}
-                    <td className="p-2 text-center">
-                      <div className="flex justify-center w-full">
-                        <Star
-                          size={23}
-                          className={
-                            task.perfectstar
-                              ? "text-yellow-500 fill-yellow-500"
-                              : "text-gray-400"
-                          }
-                        />
-                      </div>
-                    </td>
+                    {/* Perfect Star - Only show when not in Active Only mode */}
+                    {!showActiveOnly && (
+                      <td className="p-2 text-center">
+                        <div className="flex justify-center w-full">
+                          <Star
+                            size={23}
+                            className={
+                              task.perfectstar
+                                ? "text-yellow-500 fill-yellow-500"
+                                : "text-gray-400"
+                            }
+                          />
+                        </div>
+                      </td>
+                    )}
 
                     {/* Assigned To */}
                     <td className="p-2">
