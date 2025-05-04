@@ -128,7 +128,7 @@ export const BasicDetailsPanel = ({
       </div>
       
       <div className="mb-6">
-        <label htmlFor="taskDescription" className={labelClass}>Description (Optional)</label>
+        <label htmlFor="taskDescription" className={labelClass}>Add your notes/document links for this task here  (Optional)</label>
         <textarea
           id="taskDescription"
           value={taskDescription}

@@ -7,12 +7,16 @@
 
  
  
-
-TODO // Build the one timem and recurring task logic
-TODO // rotation animation
-TODO // page to land in one time or the recurring after saving/animation
+ 
+ 
 TODO // recurring done for this month - button - toggle
-TODO // theme is not saving the local
+//to start from status - weekly done, monthly done - based on recurring done field
+// the tick should not mark the task as completed
+//insted have a toggle button threre
+// color coding to fix, active all task to remove
+// weekly pending and monthly pending to update
+
+ 
  
 TODO // BUlk task assignment for all managers and all SL's
 TODO // BUild the UserView 

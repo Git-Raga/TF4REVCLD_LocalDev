@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import FontConfig from './FontConfig';
 import { useNavigate } from 'react-router-dom';
+import RecurringTask from './RecurringTask';
 
 // Custom hook for connection setup
 const useConnectionSetup = () => {
@@ -454,9 +455,12 @@ const LandingPage = () => {
               }}
             />
           );
-      default:
-        return <HomeContent theme={theme} />;
-    }
+          
+          case 'reoccur':
+            return <RecurringTask theme={theme} />;
+          default:
+            return <HomeContent theme={theme} />;
+        }
   };
 
   return (

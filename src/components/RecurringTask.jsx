@@ -7,8 +7,9 @@ import { getSortedAndFilteredTasks, calculateTaskStats } from "./SortingLogic";
 import TableDisplay from "./TableDisplay";
 import TaskFiltersnStats from "./TaskFiltersnStats";
 import { DeleteConfirmationModal, CommentsModal, EditTaskModal } from "./ModelOps";
+import RecurringTaskTable from './RecurringTaskTable';
 
-const TaskHomeAdmin = () => {
+const RecurringTask = () => {
   const { currentTheme } = useTheme();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -45,28 +46,64 @@ const TaskHomeAdmin = () => {
     setIsDeleteModalOpen(true);
   };
 
-  // Fetch tasks from database
+  // Fetch only recurring tasks from database
   useEffect(() => {
-    const fetchTasks = async () => {
+    const fetchRecurringTasks = async () => {
       try {
         setLoading(true);
         const response = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.TASK_DETAILS,
-          [Query.limit(100)]
+          [Query.equal("recurringtask", true), Query.limit(100)]
         );
 
         setTasks(response.documents);
         setLoading(false);
       } catch (err) {
-        console.error("Error fetching tasks:", err);
-        setError("Failed to load tasks. Please try again.");
+        console.error("Error fetching recurring tasks:", err);
+        setError("Failed to load recurring tasks. Please try again.");
         setLoading(false);
       }
     };
 
-    fetchTasks();
+    fetchRecurringTasks();
   }, []);
+
+
+// Toggle recurring done status
+const toggleRecurringDone = async (taskId, currentStatus) => {
+    try {
+      // Set animating state for task
+      setAnimatingTaskId(taskId);
+  
+      // Update the task in the database
+      await databases.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.TASK_DETAILS,
+        taskId,
+        {
+          recurringdone: !currentStatus,
+        }
+      );
+  
+      // Update the local state
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.$id === taskId
+            ? { ...task, recurringdone: !currentStatus }
+            : task
+        )
+      );
+  
+      // Wait for animation to complete before clearing animating state
+      setTimeout(() => {
+        setAnimatingTaskId(null);
+      }, 500);
+    } catch (err) {
+      console.error("Error toggling recurring done status:", err);
+      setAnimatingTaskId(null);
+    }
+  };
 
   // Toggle task completion status
   const toggleTaskCompletion = async (taskId, currentCompletionStatus) => {
@@ -332,13 +369,22 @@ const getTaskAgeBadge = (days) => {
     </div>
   );
 };
-  // Get due date badge
-  const getDueDateBadge = (dueDate) => {
+  // Get due date badge (modify this function)
+const getDueDateBadge = (dueDate, recurringDay) => {
+    // For recurring tasks, use recurringday instead of taskduedate
+    if (recurringDay) {
+      return (
+        <div className="bg-red-500 text-xs text-white px-3 py-1 rounded text-sm inline-block text-center w-20">
+          {recurringDay}
+        </div>
+      );
+    }
+    
     if (!dueDate) return null;
-
+  
     const date = new Date(dueDate);
     const formattedDate = format(date, "d MMM");
-
+  
     return (
       <div className="bg-red-500 text-xs text-white px-3 py-1 rounded text-sm inline-block text-center w-20">
         {formattedDate}
@@ -375,25 +421,28 @@ const getTaskAgeBadge = (days) => {
     <div className="overflow-x-auto">
       <div className="relative max-w-full mx-auto">
         {/* Use TableDisplay component */}
-        <TableDisplay
-          currentTheme={currentTheme}
-          sortedAndFilteredTasks={sortedAndFilteredTasks}
-          sortState={sortState}
-          handleDueDateClick={handleDueDateClick}
-          setSortState={setSortState}
-          animatingTaskId={animatingTaskId}
-          toggleTaskCompletion={toggleTaskCompletion}
-          openEditModal={openEditModal}
-          openDeleteModal={openDeleteModal}
-          openCommentsModal={openCommentsModal}
-          getInitialsBadge={getInitialsBadge}
-          getUrgencyBadge={getUrgencyBadge}
-          getDueDateBadge={getDueDateBadge}
-          getTaskAgeBadge={getTaskAgeBadge}
-          getRowClass={getRowClass}
-          showActiveOnly={showActiveOnly} // Pass the showActiveOnly state to TableDisplay
-            pageTitle="One Time ☝ Task Details"
-        />
+        {/* Replace TableDisplay with RecurringTaskTable */}
+        <RecurringTaskTable
+  currentTheme={currentTheme}
+  sortedAndFilteredTasks={sortedAndFilteredTasks}
+  sortState={sortState}
+  handleDueDateClick={handleDueDateClick}
+  setSortState={setSortState}
+  animatingTaskId={animatingTaskId}
+  toggleTaskCompletion={toggleTaskCompletion}
+  openEditModal={openEditModal}
+  openDeleteModal={openDeleteModal}
+  openCommentsModal={openCommentsModal}
+  getInitialsBadge={getInitialsBadge}
+  getUrgencyBadge={getUrgencyBadge}
+  getDueDateBadge={getDueDateBadge}
+  getTaskAgeBadge={getTaskAgeBadge}
+  getRowClass={getRowClass}
+  // Remove this line: getFrequencyBadge={getFrequencyBadge}
+  showActiveOnly={showActiveOnly}
+  pageTitle="Recurring 🔁 Tasks Details"
+  toggleRecurringDone={toggleRecurringDone}  // Add this prop
+/>
 
         {/* Use TaskFiltersnStats component */}
         <TaskFiltersnStats
@@ -435,4 +484,4 @@ const getTaskAgeBadge = (days) => {
   );
 };
 
-export default TaskHomeAdmin;
+export default RecurringTask;
