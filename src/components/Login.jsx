@@ -36,9 +36,14 @@ const Login = () => {
 
 
           localStorage.setItem("user", JSON.stringify(userData));
-          const userThemePreference = userData.theme || "dark";
-          localStorage.setItem("theme", userThemePreference);
+          // Check if there's already a theme preference in localStorage
+const currentTheme = localStorage.getItem("theme");
 
+// Only set theme from user data if no theme is currently set
+if (!currentTheme) {
+  const userThemePreference = userData.theme || "dark";
+  localStorage.setItem("theme", userThemePreference);
+}
           // Add a small delay to ensure storage is complete
           setTimeout(() => {
             window.location.href = "/landing";

@@ -97,18 +97,28 @@ export const ThemeProvider = ({ children }) => {
     },
   };
 
-  // Initialize theme from local storage
-  const [isDarkTheme, setIsDarkTheme] = useState(() => {
-    try {
-      const savedTheme = localStorage.getItem("theme");
-      // If no saved theme, default to dark
-      return savedTheme === null ? true : savedTheme === "dark";
-    } catch (error) {
-      // If there's an error, default to dark theme
-      return true;
+ // Initialize theme from local storage
+// Initialize theme from local storage
+const [isDarkTheme, setIsDarkTheme] = useState(() => {
+  try {
+    const savedTheme = localStorage.getItem("theme");
+    console.log("Initial load - Saved theme from localStorage:", savedTheme);
+    
+    // If no saved theme, check system preference
+    if (savedTheme === null) {
+      const systemPreference = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      console.log("No saved theme, using system preference:", systemPreference);
+      return systemPreference;
     }
-  });
-
+    
+    const isDark = savedTheme === "dark";
+    console.log("Initial load - Setting theme to dark:", isDark);
+    return isDark;
+  } catch (error) {
+    console.error("Error reading theme from localStorage:", error);
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+});
   // Determine current theme based on isDarkTheme
   const currentTheme = isDarkTheme ? themeClasses.dark : themeClasses.light;
 

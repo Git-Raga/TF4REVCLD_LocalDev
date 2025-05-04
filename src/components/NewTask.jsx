@@ -206,7 +206,8 @@ const NewTask = () => {
             : null,
         }
       );
-      
+      await new Promise(resolve => setTimeout(resolve, 1500));
+    
       // Show success message
       setSuccessMessage("Task created successfully!");
       
@@ -223,18 +224,20 @@ const NewTask = () => {
       setTaskOwner("");
       setActivePanel("basic");
       
-      // Clear success message after delay
-      setTimeout(() => {
-        setSuccessMessage("");
-        setIsSubmitting(false);
-      }, 1500);
-      
-    } catch (err) {
-      console.error("Error creating task:", err);
-      setError(err.message || "Failed to create task. Please try again.");
-      setIsSubmitting(false);
-    }
-  };
+     // Finally set isSubmitting to false AFTER the delay
+    setIsSubmitting(false);
+    
+    // Clear success message after a short additional delay
+    setTimeout(() => {
+      setSuccessMessage("");
+    }, 1000);
+    
+  } catch (err) {
+    console.error("Error creating task:", err);
+    setError(err.message || "Failed to create task. Please try again.");
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">

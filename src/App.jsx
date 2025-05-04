@@ -43,14 +43,26 @@ function App() {
 
   const initializeApp = useCallback(() => {
     try {
-      // First-time app initialization
-      if (!localStorage.getItem('appInitialized')) {
+      // Check if app was initialized
+      const appInitialized = localStorage.getItem('appInitialized');
+      
+      if (!appInitialized) {
+        // Save current theme BEFORE clearing
+        const currentTheme = localStorage.getItem('theme');
+        
+        // Clear everything
         localStorage.clear();
         sessionStorage.clear();
+        
+        // Restore the theme if it existed
+        if (currentTheme) {
+          localStorage.setItem('theme', currentTheme);
+        }
+        
+        // Mark app as initialized
         localStorage.setItem('appInitialized', 'true');
-        localStorage.setItem('theme', 'dark');
       }
-
+  
       // Sync authentication state
       const userData = localStorage.getItem('user');
       setIsAuthenticated(!!userData);

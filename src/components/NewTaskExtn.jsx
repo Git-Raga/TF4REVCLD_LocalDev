@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { format, isToday, isBefore, addDays } from "date-fns";
 import { 
   PlusCircle, 
@@ -10,6 +10,8 @@ import {
   ChevronDown 
 } from "lucide-react";
 import DatePicker from "react-datepicker";
+// Import the animation component
+import AnimatedContainer from "./NewTaskAnimate";
 
 // ===============================
 // Utility Functions
@@ -449,27 +451,9 @@ export const AssignPanel = ({
   setActivePanel,
   isSubmitting
 }) => {
-  // Add state for animation
-  const [isAnimating, setIsAnimating] = useState(false);
-  
-  // Apply animation when submission starts
-  useEffect(() => {
-    if (isSubmitting) {
-      setIsAnimating(true);
-      
-      // Reset animation state after completion
-      const timer = setTimeout(() => {
-        setIsAnimating(false);
-      }, 1000); // Animation duration
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isSubmitting]);
-
+  // Use the AnimatedContainer component for animation
   return (
-    <div 
-      className={`transition-all duration-1000 ease-in-out ${isAnimating ? 'panel-rotate-360' : ''}`}
-    >
+    <AnimatedContainer isAnimating={isSubmitting} animationType="shrinkExpand">
       <div className="mb-8">
         <label className={labelClass}>Assign to Team Member *</label>
         <div className="relative" ref={userDropdownRef}>
@@ -605,18 +589,18 @@ export const AssignPanel = ({
           </div>
           
           <div className="flex">
-            <span className={`${mutedTextClass} w-36`}>Assigned to:</span>
-            {selectedUser ? (
-              <div className="flex items-center">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white ${getInitialBgColor(selectedUser.initials)} text-xs`}>
-                  {selectedUser.initials}
-                </div>
-                <span className={`${textClass} font-medium ml-2`}>{selectedUser.name}</span>
-              </div>
-            ) : (
-              <span className="italic opacity-50">Not assigned</span>
-            )}
-          </div>
+  <span className={`${mutedTextClass} w-36`}>Assigned to:</span>
+  {selectedUser ? (
+    <div className="flex items-center">
+      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white ${getInitialBgColor(selectedUser.initials)} text-xs`}>
+        {selectedUser.initials}
+      </div>
+      <span className={`${textClass} font-medium ml-2`}>{selectedUser.name}</span>
+    </div>
+  ) : (
+    <span className={`${mutedTextClass} italic opacity-50`}>Not assigned</span>
+  )}
+</div>
         </div>
       </div>
       
@@ -649,6 +633,6 @@ export const AssignPanel = ({
           )}
         </button>
       </div>
-    </div>
+    </AnimatedContainer>
   );
 };
