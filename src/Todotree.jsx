@@ -15,6 +15,7 @@ TODO // recurring done for this month - button - toggle
 //insted have a toggle button threre
 // color coding to fix, active all task to remove
 // weekly pending and monthly pending to update
+// colorcoding to update for buttond, weekday etc
 
  
  

@@ -46,6 +46,8 @@ const RecurringTask = () => {
     setIsDeleteModalOpen(true);
   };
 
+  
+
   // Fetch only recurring tasks from database
   useEffect(() => {
     const fetchRecurringTasks = async () => {
@@ -69,6 +71,42 @@ const RecurringTask = () => {
     fetchRecurringTasks();
   }, []);
 
+  // Fixed getSortedRecurringTasks function
+const getSortedRecurringTasks = (tasks, sortState) => {
+    // Sort by frequency first (weekly before monthly)
+    let sortedTasks = [...tasks].sort((a, b) => {
+      // Define frequency order: weekly (1), monthly (2), daily (3), yearly (4)
+      const frequencyOrder = { 'weekly': 1, 'monthly': 2, 'daily': 3, 'yearly': 4 };
+      const orderA = frequencyOrder[a.recurringfreq] || 5;
+      const orderB = frequencyOrder[b.recurringfreq] || 5;
+      
+      if (orderA !== orderB) return orderA - orderB;
+      
+      // If weekly tasks, sort by day of week
+      if (a.recurringfreq === 'weekly' && a.recurringfreq === b.recurringfreq) {
+        const weekDays = {
+          'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+          'thursday': 4, 'friday': 5, 'saturday': 6
+        };
+        const dayOrderA = weekDays[a.recurringday?.toLowerCase()] !== undefined ? weekDays[a.recurringday.toLowerCase()] : 7;
+        const dayOrderB = weekDays[b.recurringday?.toLowerCase()] !== undefined ? weekDays[b.recurringday.toLowerCase()] : 7;
+        return dayOrderA - dayOrderB;
+      }
+      
+      // If monthly tasks, sort by date number
+      if (a.recurringfreq === 'monthly' && a.recurringfreq === b.recurringfreq) {
+        const dayA = parseInt(a.recurringday) || 999;
+        const dayB = parseInt(b.recurringday) || 999;
+        return dayA - dayB;
+      }
+      
+      return 0;
+    });
+    
+    return sortedTasks;
+  };
+   
+  
 
 // Toggle recurring done status
 const toggleRecurringDone = async (taskId, currentStatus) => {
@@ -406,14 +444,7 @@ const getDueDateBadge = (dueDate, recurringDay) => {
 
     return `${baseClass} ${completedClass} hover:bg-opacity-90 transition duration-150 ease-in-out`;
   };
-
-  // Use the imported function for sorting and filtering tasks
-  const sortedAndFilteredTasks = getSortedAndFilteredTasks(
-    tasks,
-    showActiveOnly,
-    sortState
-  );
-
+  const sortedAndFilteredTasks = getSortedRecurringTasks(tasks, sortState);
   // Use the imported function to calculate task statistics
   const taskStats = calculateTaskStats(tasks);
 
@@ -425,9 +456,7 @@ const getDueDateBadge = (dueDate, recurringDay) => {
         <RecurringTaskTable
   currentTheme={currentTheme}
   sortedAndFilteredTasks={sortedAndFilteredTasks}
-  sortState={sortState}
-  handleDueDateClick={handleDueDateClick}
-  setSortState={setSortState}
+  toggleRecurringDone={toggleRecurringDone}
   animatingTaskId={animatingTaskId}
   toggleTaskCompletion={toggleTaskCompletion}
   openEditModal={openEditModal}
@@ -438,11 +467,11 @@ const getDueDateBadge = (dueDate, recurringDay) => {
   getDueDateBadge={getDueDateBadge}
   getTaskAgeBadge={getTaskAgeBadge}
   getRowClass={getRowClass}
-  // Remove this line: getFrequencyBadge={getFrequencyBadge}
   showActiveOnly={showActiveOnly}
   pageTitle="Recurring 🔁 Tasks Details"
-  toggleRecurringDone={toggleRecurringDone}  // Add this prop
+  // Remove sortState, handleDueDateClick, setSortState
 />
+
 
         {/* Use TaskFiltersnStats component */}
         <TaskFiltersnStats
