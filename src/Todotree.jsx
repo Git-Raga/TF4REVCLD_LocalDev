@@ -9,11 +9,7 @@
  
  
  
-TODO // recurring done for this month - button - toggle
-//to start from status - weekly done, monthly done - based on recurring done field
-// the tick should not mark the task as completed
-//insted have a toggle button threre
-// color coding to fix, active all task to remove
+ // color coding to fix, active all task to remove
 // weekly pending and monthly pending to update
 // colorcoding to update for buttond, weekday etc
 
