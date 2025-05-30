@@ -6,7 +6,8 @@ import { useTheme } from "./ColorChange";
 import { getSortedAndFilteredTasks, calculateTaskStats } from "./SortingLogic";
 import TableDisplay from "./TableDisplay";
 import TaskFiltersnStats from "./TaskFiltersnStats";
-import { DeleteConfirmationModal, CommentsModal, EditTaskModal } from "./ModelOps";
+import { DeleteConfirmationModal, CommentsModal } from "./ModelOps";
+import { OneTimeTaskEditModal } from "./OneTimeTaskEdit";
 
 const TaskHomeAdmin = () => {
   const { currentTheme } = useTheme();
@@ -45,7 +46,7 @@ const TaskHomeAdmin = () => {
     setIsDeleteModalOpen(true);
   };
 
-  // Fetch tasks from database
+  // Fetch tasks from database - Filter out recurring tasks
   useEffect(() => {
     const fetchTasks = async () => {
       try {
@@ -53,7 +54,10 @@ const TaskHomeAdmin = () => {
         const response = await databases.listDocuments(
           DATABASE_ID,
           COLLECTIONS.TASK_DETAILS,
-          [Query.limit(100)]
+          [
+            Query.equal("recurringtask", false), // Only fetch one-time tasks
+            Query.limit(100)
+          ]
         );
 
         setTasks(response.documents);
@@ -165,25 +169,30 @@ const TaskHomeAdmin = () => {
     setIsEditModalOpen(true);
   };
 
-  // Save edited task
+  // Save edited task - FIXED to include all required fields
   const saveEditedTask = async () => {
     try {
       // Set saving state to true
       setIsSaving(true);
+
+      // Prepare update data with all required fields
+      const updateData = {
+        taskname: editTask.taskname,
+        urgency: editTask.urgency,
+        taskduedate: editTask.taskduedate
+          ? new Date(editTask.taskduedate).toISOString()
+          : null,
+        comments: editTask.comments || "",
+        // CRITICAL: Include the recurringtask field to prevent the error
+        recurringtask: false, // This is a one-time task
+      };
 
       // Update the task in the database
       await databases.updateDocument(
         DATABASE_ID,
         COLLECTIONS.TASK_DETAILS,
         editTask.$id,
-        {
-          taskname: editTask.taskname,
-          urgency: editTask.urgency,
-          taskduedate: editTask.taskduedate
-            ? new Date(editTask.taskduedate).toISOString()
-            : null,
-          comments: editTask.comments,
-        }
+        updateData
       );
 
       // Update local state
@@ -198,6 +207,7 @@ const TaskHomeAdmin = () => {
                   ? new Date(editTask.taskduedate).toISOString()
                   : null,
                 comments: editTask.comments,
+                recurringtask: false, // Preserve this field in local state
               }
             : task
         )
@@ -392,7 +402,7 @@ const getTaskAgeBadge = (days) => {
           getTaskAgeBadge={getTaskAgeBadge}
           getRowClass={getRowClass}
           showActiveOnly={showActiveOnly} // Pass the showActiveOnly state to TableDisplay
-            pageTitle="One Time ☝ Task Details"
+          pageTitle="One Time ☝ Task Details"
         />
 
         {/* Use TaskFiltersnStats component */}
@@ -421,7 +431,8 @@ const getTaskAgeBadge = (days) => {
           currentTheme={currentTheme}
         />
 
-        <EditTaskModal
+        {/* FIXED: Changed EditTaskModal to OneTimeTaskEditModal */}
+        <OneTimeTaskEditModal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           onSave={saveEditedTask}

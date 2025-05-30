@@ -5,8 +5,9 @@ import { format, differenceInDays } from "date-fns";
 import { useTheme } from "./ColorChange";
 import { getSortedAndFilteredTasks, calculateTaskStats } from "./SortingLogic";
 import TableDisplay from "./TableDisplay";
-import TaskFiltersnStats from "./TaskFiltersnStats";
-import { DeleteConfirmationModal, CommentsModal, EditTaskModal } from "./ModelOps";
+import RecurringTaskFiltersnStats from "./RecurringTaskFiltersnStats";
+import { DeleteConfirmationModal, CommentsModal } from "./ModelOps";
+import { RecurringTaskEditModal } from "./RecurringTaskEdit";
 import RecurringTaskTable from './RecurringTaskTable';
 
 const RecurringTask = () => {
@@ -28,8 +29,8 @@ const RecurringTask = () => {
   const [editTask, setEditTask] = useState({
     $id: "",
     taskname: "",
-    urgency: "Normal",
-    taskduedate: "",
+    recurringfreq: "",
+    recurringday: "",
     comments: "",
   });
 
@@ -45,8 +46,6 @@ const RecurringTask = () => {
     });
     setIsDeleteModalOpen(true);
   };
-
-  
 
   // Fetch only recurring tasks from database
   useEffect(() => {
@@ -106,8 +105,6 @@ const getSortedRecurringTasks = (tasks, sortState) => {
     return sortedTasks;
   };
    
-  
-
 // Toggle recurring done status
 const toggleRecurringDone = async (taskId, currentStatus) => {
     try {
@@ -226,67 +223,78 @@ const toggleRecurringDone = async (taskId, currentStatus) => {
     setIsCommentsModalOpen(true);
   };
 
-  // Handle opening edit modal
-  const openEditModal = (task) => {
+// Update the openEditModal function to include recurring task data
+const openEditModal = (task) => {
     setEditTask({
       $id: task.$id,
       taskname: task.taskname,
-      urgency: task.urgency || "Normal",
-      taskduedate: task.taskduedate
-        ? format(new Date(task.taskduedate), "yyyy-MM-dd")
-        : "",
+      recurringfreq: task.recurringfreq || "",
+      recurringday: task.recurringday || "",
       comments: task.comments || "",
     });
     setIsEditModalOpen(true);
   };
 
-  // Save edited task
-  const saveEditedTask = async () => {
+  const saveEditedTask = async (customTask = null) => {
     try {
-      // Set saving state to true
+      // Use either the custom task passed or the editTask state
+      const taskToSave = customTask || editTask;
+      
       setIsSaving(true);
-
+      console.log("Saving task:", taskToSave); // For debugging
+  
+      // Prepare update data - IMPORTANT: Only include fields that should be updated
+      const updateData = {
+        taskname: taskToSave.taskname,
+        comments: taskToSave.comments || "",
+        // Preserve the recurringtask field to avoid the missing attribute error
+        recurringtask: true, // This is crucial for recurring tasks
+      };
+  
+      // Always include recurringday if it exists - this is crucial
+      if (taskToSave.recurringday) {
+        updateData.recurringday = taskToSave.recurringday;
+      }
+  
+      // Include recurring frequency to maintain consistency
+      if (taskToSave.recurringfreq) {
+        updateData.recurringfreq = taskToSave.recurringfreq;
+      }
+  
+      console.log("Update data:", updateData); // For debugging
+  
       // Update the task in the database
       await databases.updateDocument(
         DATABASE_ID,
         COLLECTIONS.TASK_DETAILS,
-        editTask.$id,
-        {
-          taskname: editTask.taskname,
-          urgency: editTask.urgency,
-          taskduedate: editTask.taskduedate
-            ? new Date(editTask.taskduedate).toISOString()
-            : null,
-          comments: editTask.comments,
-        }
+        taskToSave.$id,
+        updateData
       );
-
+  
       // Update local state
       setTasks((prevTasks) =>
         prevTasks.map((task) =>
-          task.$id === editTask.$id
+          task.$id === taskToSave.$id
             ? {
                 ...task,
-                taskname: editTask.taskname,
-                urgency: editTask.urgency,
-                taskduedate: editTask.taskduedate
-                  ? new Date(editTask.taskduedate).toISOString()
-                  : null,
-                comments: editTask.comments,
+                taskname: taskToSave.taskname,
+                recurringday: taskToSave.recurringday || task.recurringday,
+                comments: taskToSave.comments || "",
+                // Preserve other important fields
+                recurringtask: true,
+                recurringfreq: taskToSave.recurringfreq || task.recurringfreq,
               }
             : task
         )
       );
-
-      // Wait for 1 second
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Reset saving state and close modal
+  
+      await new Promise((resolve) => setTimeout(resolve, 500));
       setIsSaving(false);
       setIsEditModalOpen(false);
+      
     } catch (err) {
-      console.error("Error updating task:", err);
-      alert("Failed to update task. Please try again.");
+      console.error("Error updating recurring task:", err);
+      alert("Failed to update recurring task. Please try again.");
       setIsSaving(false);
     }
   };
@@ -459,6 +467,8 @@ const getDueDateBadge = (dueDate, recurringDay) => {
   toggleRecurringDone={toggleRecurringDone}
   animatingTaskId={animatingTaskId}
   toggleTaskCompletion={toggleTaskCompletion}
+  // FIXED: Pass the actual save function instead of openEditModal
+  onSaveTask={saveEditedTask}  // Add this new prop
   openEditModal={openEditModal}
   openDeleteModal={openDeleteModal}
   openCommentsModal={openCommentsModal}
@@ -469,17 +479,18 @@ const getDueDateBadge = (dueDate, recurringDay) => {
   getRowClass={getRowClass}
   showActiveOnly={showActiveOnly}
   pageTitle="Recurring 🔁 Tasks Details"
-  // Remove sortState, handleDueDateClick, setSortState
 />
 
 
+
         {/* Use TaskFiltersnStats component */}
-        <TaskFiltersnStats
-          currentTheme={currentTheme}
-          showActiveOnly={showActiveOnly}
-          setShowActiveOnly={setShowActiveOnly}
-          taskStats={taskStats}
-        />
+         
+<RecurringTaskFiltersnStats
+  currentTheme={currentTheme}
+  showActiveOnly={showActiveOnly}
+  setShowActiveOnly={setShowActiveOnly}
+  tasks={tasks} // Pass the tasks array directly
+/>
 
         {/* Modals - now using components from ModelOps.jsx */}
         <DeleteConfirmationModal
@@ -499,7 +510,7 @@ const getDueDateBadge = (dueDate, recurringDay) => {
           currentTheme={currentTheme}
         />
 
-        <EditTaskModal
+        <RecurringTaskEditModal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           onSave={saveEditedTask}

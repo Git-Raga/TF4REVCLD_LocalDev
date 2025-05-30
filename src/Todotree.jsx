@@ -8,10 +8,12 @@
  
  
  
- 
- // color coding to fix, active all task to remove
-// weekly pending and monthly pending to update
-// colorcoding to update for buttond, weekday etc
+// Recurring owner change to add
+// Recurring Editing options to fix (critical / non critical should not come in recurring )
+// completed stike out - in recurring task
+// in recurring - bottom panel text and options to change - weekly OPEN closed, Monthly OPEN Closed etc  
+// taskloading from DB everytime - to fix
+
 
  
  
