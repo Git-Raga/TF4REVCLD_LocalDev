@@ -8,6 +8,7 @@ import TableDisplay from "./TableDisplay";
 import TaskFiltersnStats from "./TaskFiltersnStats";
 import { DeleteConfirmationModal, CommentsModal } from "./ModelOps";
 import { OneTimeTaskEditModal } from "./OneTimeTaskEdit";
+import taskCacheService from "./TaskCacheService"; // Import cache service
 
 const TaskHomeAdmin = () => {
   const { currentTheme } = useTheme();
@@ -46,22 +47,22 @@ const TaskHomeAdmin = () => {
     setIsDeleteModalOpen(true);
   };
 
-  // Fetch tasks from database - Filter out recurring tasks
+  // UPDATED: Fetch tasks using cache service
   useEffect(() => {
     const fetchTasks = async () => {
       try {
         setLoading(true);
-        const response = await databases.listDocuments(
-          DATABASE_ID,
-          COLLECTIONS.TASK_DETAILS,
-          [
-            Query.equal("recurringtask", false), // Only fetch one-time tasks
-            Query.limit(100)
-          ]
-        );
-
-        setTasks(response.documents);
+        setError(null);
+        
+        // Use cache service to get tasks
+        const fetchedTasks = await taskCacheService.getTasks('onetime');
+        
+        setTasks(fetchedTasks);
         setLoading(false);
+        
+        // Log cache status for debugging
+        console.log('Cache Status:', taskCacheService.getCacheStatus());
+        
       } catch (err) {
         console.error("Error fetching tasks:", err);
         setError("Failed to load tasks. Please try again.");
@@ -72,7 +73,7 @@ const TaskHomeAdmin = () => {
     fetchTasks();
   }, []);
 
-  // Toggle task completion status
+  // UPDATED: Toggle task completion with cache update
   const toggleTaskCompletion = async (taskId, currentCompletionStatus) => {
     try {
       // Set animating state for task
@@ -89,13 +90,16 @@ const TaskHomeAdmin = () => {
       );
 
       // Update the local state
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.$id === taskId
-            ? { ...task, taskcompleted: !currentCompletionStatus }
-            : task
-        )
+      const updatedTasks = tasks.map((task) =>
+        task.$id === taskId
+          ? { ...task, taskcompleted: !currentCompletionStatus }
+          : task
       );
+      setTasks(updatedTasks);
+
+      // Update cache with the modified task
+      const updatedTask = updatedTasks.find(task => task.$id === taskId);
+      taskCacheService.updateTaskInCache('onetime', updatedTask);
 
       // Wait for animation to complete before clearing animating state
       setTimeout(() => {
@@ -107,7 +111,7 @@ const TaskHomeAdmin = () => {
     }
   };
 
-  // Add this function to handle the actual deletion
+  // UPDATED: Handle task deletion with cache update
   const handleDeleteTask = async () => {
     try {
       setIsDeleting(true);
@@ -123,6 +127,9 @@ const TaskHomeAdmin = () => {
       setTasks((prevTasks) =>
         prevTasks.filter((task) => task.$id !== deleteTask.$id)
       );
+
+      // Remove from cache
+      taskCacheService.removeTaskFromCache('onetime', deleteTask.$id);
 
       // Wait for animation
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -155,55 +162,54 @@ const TaskHomeAdmin = () => {
     setIsCommentsModalOpen(true);
   };
 
-// Updated openEditModal function to include case owner data
-const openEditModal = (task) => {
-  setEditTask({
-    $id: task.$id,
-    taskname: task.taskname,
-    urgency: task.urgency || "Normal",
-    taskduedate: task.taskduedate
-      ? format(new Date(task.taskduedate), "yyyy-MM-dd")
-      : "",
-    comments: task.comments || "",
-    // Include case owner fields
-    taskownerinitial: task.taskownerinitial || "",
-    taskownername: task.taskownername || "",
-  });
-  setIsEditModalOpen(true);
-};
-
-// Updated saveEditedTask function
-const saveEditedTask = async () => {
-  try {
-    // Set saving state to true
-    setIsSaving(true);
-
-    // Prepare update data with all required fields including case owner
-    const updateData = {
-      taskname: editTask.taskname,
-      urgency: editTask.urgency,
-      taskduedate: editTask.taskduedate
-        ? new Date(editTask.taskduedate).toISOString()
-        : null,
-      comments: editTask.comments || "",
+  // Updated openEditModal function to include case owner data
+  const openEditModal = (task) => {
+    setEditTask({
+      $id: task.$id,
+      taskname: task.taskname,
+      urgency: task.urgency || "Normal",
+      taskduedate: task.taskduedate
+        ? format(new Date(task.taskduedate), "yyyy-MM-dd")
+        : "",
+      comments: task.comments || "",
       // Include case owner fields
-      taskownerinitial: editTask.taskownerinitial || "",
-      taskownername: editTask.taskownername || "",
-      // CRITICAL: Include the recurringtask field to prevent the error
-      recurringtask: false, // This is a one-time task
-    };
+      taskownerinitial: task.taskownerinitial || "",
+      taskownername: task.taskownername || "",
+    });
+    setIsEditModalOpen(true);
+  };
 
-    // Update the task in the database
-    await databases.updateDocument(
-      DATABASE_ID,
-      COLLECTIONS.TASK_DETAILS,
-      editTask.$id,
-      updateData
-    );
+  // UPDATED: Save edited task with cache update
+  const saveEditedTask = async () => {
+    try {
+      // Set saving state to true
+      setIsSaving(true);
 
-    // Update local state
-    setTasks((prevTasks) =>
-      prevTasks.map((task) =>
+      // Prepare update data with all required fields including case owner
+      const updateData = {
+        taskname: editTask.taskname,
+        urgency: editTask.urgency,
+        taskduedate: editTask.taskduedate
+          ? new Date(editTask.taskduedate).toISOString()
+          : null,
+        comments: editTask.comments || "",
+        // Include case owner fields
+        taskownerinitial: editTask.taskownerinitial || "",
+        taskownername: editTask.taskownername || "",
+        // CRITICAL: Include the recurringtask field to prevent the error
+        recurringtask: false, // This is a one-time task
+      };
+
+      // Update the task in the database
+      await databases.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.TASK_DETAILS,
+        editTask.$id,
+        updateData
+      );
+
+      // Update local state
+      const updatedTasks = tasks.map((task) =>
         task.$id === editTask.$id
           ? {
               ...task,
@@ -218,22 +224,25 @@ const saveEditedTask = async () => {
               recurringtask: false, // Preserve this field in local state
             }
           : task
-      )
-    );
+      );
+      setTasks(updatedTasks);
 
-    // Wait for 1 second
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+      // Update cache with the modified task
+      const updatedTask = updatedTasks.find(task => task.$id === editTask.$id);
+      taskCacheService.updateTaskInCache('onetime', updatedTask);
 
-    // Reset saving state and close modal
-    setIsSaving(false);
-    setIsEditModalOpen(false);
-  } catch (err) {
-    console.error("Error updating task:", err);
-    alert("Failed to update task. Please try again.");
-    setIsSaving(false);
-  }
-};
+      // Wait for 1 second
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
+      // Reset saving state and close modal
+      setIsSaving(false);
+      setIsEditModalOpen(false);
+    } catch (err) {
+      console.error("Error updating task:", err);
+      alert("Failed to update task. Please try again.");
+      setIsSaving(false);
+    }
+  };
 
   const getInitialsBadge = (initial) => {
     if (!initial) return null;
@@ -337,20 +346,21 @@ const saveEditedTask = async () => {
     );
   };
 
-// Get task age badge
-const getTaskAgeBadge = (days) => {
-  return (
-    <div
-      className={`${
-        currentTheme.name === "dark" 
-          ? "bg-gray-200 text-gray-900" 
-          : "bg-gray-800 text-white"
-      } px-3 py-1 rounded inline-block text-center w-20 rounded-xl`}
-    >
-      {days} Days
-    </div>
-  );
-};
+  // Get task age badge
+  const getTaskAgeBadge = (days) => {
+    return (
+      <div
+        className={`${
+          currentTheme.name === "dark" 
+            ? "bg-gray-200 text-gray-900" 
+            : "bg-gray-800 text-white"
+        } px-3 py-1 rounded inline-block text-center w-20 rounded-xl`}
+      >
+        {days} Days
+      </div>
+    );
+  };
+  
   // Get due date badge
   const getDueDateBadge = (dueDate) => {
     if (!dueDate) return null;
@@ -390,9 +400,36 @@ const getTaskAgeBadge = (days) => {
   // Use the imported function to calculate task statistics
   const taskStats = calculateTaskStats(tasks);
 
+  // ADD: Function to refresh data from database (useful for debugging or manual refresh)
+  const refreshFromDatabase = async () => {
+    try {
+      setLoading(true);
+      const freshTasks = await taskCacheService.getTasks('onetime', true); // Force refresh
+      setTasks(freshTasks);
+      setLoading(false);
+    } catch (err) {
+      console.error("Error refreshing tasks:", err);
+      setError("Failed to refresh tasks. Please try again.");
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="overflow-x-auto">
       <div className="relative max-w-full mx-auto">
+{/*          
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-2 p-2 bg-blue-100 text-blue-800 text-xs rounded">
+            📦 Cache Status: {JSON.stringify(taskCacheService.getCacheStatus())}
+            <button 
+              onClick={refreshFromDatabase}
+              className="ml-2 px-2 py-1 bg-blue-500 text-white rounded text-xs"
+            >
+              Force Refresh
+            </button>
+          </div> */}
+         
+
         {/* Use TableDisplay component */}
         <TableDisplay
           currentTheme={currentTheme}

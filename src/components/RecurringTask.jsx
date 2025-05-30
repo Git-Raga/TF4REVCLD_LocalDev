@@ -9,6 +9,7 @@ import RecurringTaskFiltersnStats from "./RecurringTaskFiltersnStats";
 import { DeleteConfirmationModal, CommentsModal } from "./ModelOps";
 import { RecurringTaskEditModal } from "./RecurringTaskEdit";
 import RecurringTaskTable from './RecurringTaskTable';
+import taskCacheService from "./TaskCacheService"; // Import cache service
 
 const RecurringTask = () => {
   const { currentTheme } = useTheme();
@@ -47,19 +48,22 @@ const RecurringTask = () => {
     setIsDeleteModalOpen(true);
   };
 
-  // Fetch only recurring tasks from database
+  // UPDATED: Fetch recurring tasks using cache service
   useEffect(() => {
     const fetchRecurringTasks = async () => {
       try {
         setLoading(true);
-        const response = await databases.listDocuments(
-          DATABASE_ID,
-          COLLECTIONS.TASK_DETAILS,
-          [Query.equal("recurringtask", true), Query.limit(100)]
-        );
-
-        setTasks(response.documents);
+        setError(null);
+        
+        // Use cache service to get recurring tasks
+        const fetchedTasks = await taskCacheService.getTasks('recurring');
+        
+        setTasks(fetchedTasks);
         setLoading(false);
+        
+        // Log cache status for debugging
+        console.log('Recurring Cache Status:', taskCacheService.getCacheStatus());
+        
       } catch (err) {
         console.error("Error fetching recurring tasks:", err);
         setError("Failed to load recurring tasks. Please try again.");
@@ -71,7 +75,7 @@ const RecurringTask = () => {
   }, []);
 
   // Fixed getSortedRecurringTasks function
-const getSortedRecurringTasks = (tasks, sortState) => {
+  const getSortedRecurringTasks = (tasks, sortState) => {
     // Sort by frequency first (weekly before monthly)
     let sortedTasks = [...tasks].sort((a, b) => {
       // Define frequency order: weekly (1), monthly (2), daily (3), yearly (4)
@@ -104,13 +108,13 @@ const getSortedRecurringTasks = (tasks, sortState) => {
     
     return sortedTasks;
   };
-   
-// Toggle recurring done status
-const toggleRecurringDone = async (taskId, currentStatus) => {
+
+  // UPDATED: Toggle recurring done status with cache update
+  const toggleRecurringDone = async (taskId, currentStatus) => {
     try {
       // Set animating state for task
       setAnimatingTaskId(taskId);
-  
+
       // Update the task in the database
       await databases.updateDocument(
         DATABASE_ID,
@@ -120,16 +124,19 @@ const toggleRecurringDone = async (taskId, currentStatus) => {
           recurringdone: !currentStatus,
         }
       );
-  
+
       // Update the local state
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.$id === taskId
-            ? { ...task, recurringdone: !currentStatus }
-            : task
-        )
+      const updatedTasks = tasks.map((task) =>
+        task.$id === taskId
+          ? { ...task, recurringdone: !currentStatus }
+          : task
       );
-  
+      setTasks(updatedTasks);
+
+      // Update cache with the modified task
+      const updatedTask = updatedTasks.find(task => task.$id === taskId);
+      taskCacheService.updateTaskInCache('recurring', updatedTask);
+
       // Wait for animation to complete before clearing animating state
       setTimeout(() => {
         setAnimatingTaskId(null);
@@ -140,7 +147,7 @@ const toggleRecurringDone = async (taskId, currentStatus) => {
     }
   };
 
-  // Toggle task completion status
+  // UPDATED: Toggle task completion status with cache update
   const toggleTaskCompletion = async (taskId, currentCompletionStatus) => {
     try {
       // Set animating state for task
@@ -157,13 +164,16 @@ const toggleRecurringDone = async (taskId, currentStatus) => {
       );
 
       // Update the local state
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.$id === taskId
-            ? { ...task, taskcompleted: !currentCompletionStatus }
-            : task
-        )
+      const updatedTasks = tasks.map((task) =>
+        task.$id === taskId
+          ? { ...task, taskcompleted: !currentCompletionStatus }
+          : task
       );
+      setTasks(updatedTasks);
+
+      // Update cache with the modified task
+      const updatedTask = updatedTasks.find(task => task.$id === taskId);
+      taskCacheService.updateTaskInCache('recurring', updatedTask);
 
       // Wait for animation to complete before clearing animating state
       setTimeout(() => {
@@ -175,7 +185,7 @@ const toggleRecurringDone = async (taskId, currentStatus) => {
     }
   };
 
-  // Add this function to handle the actual deletion
+  // UPDATED: Handle task deletion with cache update
   const handleDeleteTask = async () => {
     try {
       setIsDeleting(true);
@@ -191,6 +201,9 @@ const toggleRecurringDone = async (taskId, currentStatus) => {
       setTasks((prevTasks) =>
         prevTasks.filter((task) => task.$id !== deleteTask.$id)
       );
+
+      // Remove from cache
+      taskCacheService.removeTaskFromCache('recurring', deleteTask.$id);
 
       // Wait for animation
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -237,6 +250,7 @@ const toggleRecurringDone = async (taskId, currentStatus) => {
     setIsEditModalOpen(true);
   };
 
+  // UPDATED: Save edited task with cache update
   const saveEditedTask = async (customTask = null) => {
     try {
       // Use either the custom task passed or the editTask state
@@ -244,7 +258,7 @@ const toggleRecurringDone = async (taskId, currentStatus) => {
       
       setIsSaving(true);
       console.log("Saving task:", taskToSave); // For debugging
-  
+
       // Prepare update data - IMPORTANT: Only include fields that should be updated
       const updateData = {
         taskname: taskToSave.taskname,
@@ -255,19 +269,19 @@ const toggleRecurringDone = async (taskId, currentStatus) => {
         taskownerinitial: taskToSave.taskownerinitial || "",
         taskownername: taskToSave.taskownername || "",
       };
-  
+
       // Always include recurringday if it exists - this is crucial
       if (taskToSave.recurringday) {
         updateData.recurringday = taskToSave.recurringday;
       }
-  
+
       // Include recurring frequency to maintain consistency
       if (taskToSave.recurringfreq) {
         updateData.recurringfreq = taskToSave.recurringfreq;
       }
-  
+
       console.log("Update data:", updateData); // For debugging
-  
+
       // Update the task in the database
       await databases.updateDocument(
         DATABASE_ID,
@@ -275,38 +289,40 @@ const toggleRecurringDone = async (taskId, currentStatus) => {
         taskToSave.$id,
         updateData
       );
-  
+
       // Update local state
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.$id === taskToSave.$id
-            ? {
-                ...task,
-                taskname: taskToSave.taskname,
-                recurringday: taskToSave.recurringday || task.recurringday,
-                comments: taskToSave.comments || "",
-                taskownerinitial: taskToSave.taskownerinitial || task.taskownerinitial,
-                taskownername: taskToSave.taskownername || task.taskownername,
-                // Preserve other important fields
-                recurringtask: true,
-                recurringfreq: taskToSave.recurringfreq || task.recurringfreq,
-              }
-            : task
-        )
+      const updatedTasks = tasks.map((task) =>
+        task.$id === taskToSave.$id
+          ? {
+              ...task,
+              taskname: taskToSave.taskname,
+              recurringday: taskToSave.recurringday || task.recurringday,
+              comments: taskToSave.comments || "",
+              taskownerinitial: taskToSave.taskownerinitial || task.taskownerinitial,
+              taskownername: taskToSave.taskownername || task.taskownername,
+              // Preserve other important fields
+              recurringtask: true,
+              recurringfreq: taskToSave.recurringfreq || task.recurringfreq,
+            }
+          : task
       );
-  
+      setTasks(updatedTasks);
+
+      // Update cache with the modified task
+      const updatedTask = updatedTasks.find(task => task.$id === taskToSave.$id);
+      taskCacheService.updateTaskInCache('recurring', updatedTask);
+
       await new Promise((resolve) => setTimeout(resolve, 500));
       setIsSaving(false);
       setIsEditModalOpen(false);
-      
     } catch (err) {
-      console.error("Error updating recurring task:", err);
-      alert("Failed to update recurring task. Please try again.");
+      console.error("Error saving task:", err);
+      alert("Failed to save task. Please try again.");
       setIsSaving(false);
     }
   };
   
-
+  // MOVED: getInitialsBadge function (was incorrectly nested inside saveEditedTask)
   const getInitialsBadge = (initial) => {
     if (!initial) return null;
 
@@ -409,22 +425,23 @@ const toggleRecurringDone = async (taskId, currentStatus) => {
     );
   };
 
-// Get task age badge
-const getTaskAgeBadge = (days) => {
-  return (
-    <div
-      className={`${
-        currentTheme.name === "dark" 
-          ? "bg-gray-200 text-gray-900" 
-          : "bg-gray-800 text-white"
-      } px-3 py-1 rounded inline-block text-center w-20 rounded-xl`}
-    >
-      {days} Days
-    </div>
-  );
-};
+  // Get task age badge
+  const getTaskAgeBadge = (days) => {
+    return (
+      <div
+        className={`${
+          currentTheme.name === "dark" 
+            ? "bg-gray-200 text-gray-900" 
+            : "bg-gray-800 text-white"
+        } px-3 py-1 rounded inline-block text-center w-20 rounded-xl`}
+      >
+        {days} Days
+      </div>
+    );
+  };
+  
   // Get due date badge (modify this function)
-const getDueDateBadge = (dueDate, recurringDay) => {
+  const getDueDateBadge = (dueDate, recurringDay) => {
     // For recurring tasks, use recurringday instead of taskduedate
     if (recurringDay) {
       return (
@@ -435,10 +452,10 @@ const getDueDateBadge = (dueDate, recurringDay) => {
     }
     
     if (!dueDate) return null;
-  
+
     const date = new Date(dueDate);
     const formattedDate = format(date, "d MMM");
-  
+
     return (
       <div className="bg-red-500 text-xs text-white px-3 py-1 rounded text-sm inline-block text-center w-20">
         {formattedDate}
@@ -460,45 +477,58 @@ const getDueDateBadge = (dueDate, recurringDay) => {
 
     return `${baseClass} ${completedClass} hover:bg-opacity-90 transition duration-150 ease-in-out`;
   };
+  
   const sortedAndFilteredTasks = getSortedRecurringTasks(tasks, sortState);
   // Use the imported function to calculate task statistics
   const taskStats = calculateTaskStats(tasks);
 
+  // ADD: Function to refresh data from database (useful for debugging or manual refresh)
+  const refreshFromDatabase = async () => {
+    try {
+      setLoading(true);
+      const freshTasks = await taskCacheService.getTasks('recurring', true); // Force refresh
+      setTasks(freshTasks);
+      setLoading(false);
+    } catch (err) {
+      console.error("Error refreshing recurring tasks:", err);
+      setError("Failed to refresh recurring tasks. Please try again.");
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="overflow-x-auto">
       <div className="relative max-w-full mx-auto">
-        {/* Use TableDisplay component */}
+        {/* Debug info removed for cleaner UI */}
+
         {/* Replace TableDisplay with RecurringTaskTable */}
         <RecurringTaskTable
-  currentTheme={currentTheme}
-  sortedAndFilteredTasks={sortedAndFilteredTasks}
-  toggleRecurringDone={toggleRecurringDone}
-  animatingTaskId={animatingTaskId}
-  toggleTaskCompletion={toggleTaskCompletion}
-  // FIXED: Pass the actual save function instead of openEditModal
-  onSaveTask={saveEditedTask}  // Add this new prop
-  openEditModal={openEditModal}
-  openDeleteModal={openDeleteModal}
-  openCommentsModal={openCommentsModal}
-  getInitialsBadge={getInitialsBadge}
-  getUrgencyBadge={getUrgencyBadge}
-  getDueDateBadge={getDueDateBadge}
-  getTaskAgeBadge={getTaskAgeBadge}
-  getRowClass={getRowClass}
-  showActiveOnly={showActiveOnly}
-  pageTitle="Recurring 🔁 Tasks Details"
-/>
+          currentTheme={currentTheme}
+          sortedAndFilteredTasks={sortedAndFilteredTasks}
+          toggleRecurringDone={toggleRecurringDone}
+          animatingTaskId={animatingTaskId}
+          toggleTaskCompletion={toggleTaskCompletion}
+          // FIXED: Pass the actual save function instead of openEditModal
+          onSaveTask={saveEditedTask}  // Add this new prop
+          openEditModal={openEditModal}
+          openDeleteModal={openDeleteModal}
+          openCommentsModal={openCommentsModal}
+          getInitialsBadge={getInitialsBadge}
+          getUrgencyBadge={getUrgencyBadge}
+          getDueDateBadge={getDueDateBadge}
+          getTaskAgeBadge={getTaskAgeBadge}
+          getRowClass={getRowClass}
+          showActiveOnly={showActiveOnly}
+          pageTitle="Recurring 🔁 Tasks Details"
+        />
 
-
-
-        {/* Use TaskFiltersnStats component */}
-         
-<RecurringTaskFiltersnStats
-  currentTheme={currentTheme}
-  showActiveOnly={showActiveOnly}
-  setShowActiveOnly={setShowActiveOnly}
-  tasks={tasks} // Pass the tasks array directly
-/>
+        {/* Use RecurringTaskFiltersnStats component */}
+        <RecurringTaskFiltersnStats
+          currentTheme={currentTheme}
+          showActiveOnly={showActiveOnly}
+          setShowActiveOnly={setShowActiveOnly}
+          tasks={tasks} // Pass the tasks array directly
+        />
 
         {/* Modals - now using components from ModelOps.jsx */}
         <DeleteConfirmationModal

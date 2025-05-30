@@ -11,12 +11,11 @@
 
 // taskloading from DB everytime - to fix
 
-
+//first time loading - image issue to fix
  
  
 TODO // BUlk task assignment for all managers and all SL's
 TODO // BUild the UserView 
-TODO // Only Admin users can create tasks
 TODO // Logic to Done to Complete section 
 TODO // BUild the Projects
 

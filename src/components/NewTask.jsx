@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "./ColorChange";
 import { databases, DATABASE_ID, COLLECTIONS } from "../appwrite/config";
+import taskCacheService from "./TaskCacheService"; // Import cache service
 
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -150,7 +151,7 @@ const NewTask = () => {
   // Get selected user details
   const selectedUser = userOptions.find((user) => user.id === taskOwner);
 
-  // Form submission handler
+  // UPDATED: Form submission handler with cache integration
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -179,71 +180,130 @@ const NewTask = () => {
         return;
       }
       
+      // Prepare task data
+      const taskData = {
+        taskname: taskName,
+        comments: taskDescription || null,
+        taskownername: selectedUser.name,
+        taskownerinitial: selectedUser.initials,
+        taskowneremail: selectedUser.email,
+        taskduedate: hasDueDate ? dueDate : null,
+        userdone: false,
+        taskcompleted: false,
+        perfectstar: false,
+        urgency: urgency === "critical" ? "Critical" : "Normal",
+        recurringtask: isRecurring,
+        recurringfreq: isRecurring ? recurringFrequency : null,
+        recurringday: isRecurring 
+          ? (recurringFrequency === "weekly" 
+              ? recurringDay 
+              : recurringFrequency === "monthly" 
+                ? recurringMonth 
+                : null)
+          : null,
+        recurringdone: false, // Add this for recurring tasks
+      };
+      
       // Create task document
       const response = await databases.createDocument(
         DATABASE_ID,
         COLLECTIONS.TASK_DETAILS,
         ID.unique(),
-        {
-          taskname: taskName,
-          comments: taskDescription || null,
-          taskownername: selectedUser.name,
-          taskownerinitial: selectedUser.initials,
-          taskowneremail: selectedUser.email,
-          taskduedate: hasDueDate ? dueDate : null,
-          userdone: false,
-          taskcompleted: false,
-          perfectstar: false,
-          urgency: urgency === "critical" ? "Critical" : "Normal",
-          recurringtask: isRecurring,
-          recurringfreq: isRecurring ? recurringFrequency : null,
-          recurringday: isRecurring 
-            ? (recurringFrequency === "weekly" 
-                ? recurringDay 
-                : recurringFrequency === "monthly" 
-                  ? recurringMonth 
-                  : null)
-            : null,
-        }
+        taskData
       );
+      
+      // DEBUG: Console logs (keep these for development debugging)
+      console.log("✅ Task created successfully:", response);
+      
+      // CACHE INTEGRATION: Determine task type and update cache
+      const taskType = isRecurring ? 'recurring' : 'onetime';
+      
+      // Option 1: Mark cache as dirty (forces refresh on next load)
+      taskCacheService.markCacheDirty(taskType);
+      // DEBUG: Console log for cache status
+      console.log(`🔄 Marked ${taskType} cache as dirty`);
+      
+      // Option 2: Add new task to cache immediately (optional, for instant updates)
+      try {
+        taskCacheService.addTaskToCache(taskType, response);
+        // DEBUG: Console log for cache addition
+        console.log(`➕ Added new ${taskType} task to cache`);
+      } catch (cacheError) {
+        // DEBUG: Console warning for cache errors
+        console.warn("⚠️ Failed to add task to cache, but task was created:", cacheError);
+        // Don't fail the operation if cache update fails
+      }
+      
+      // Wait for UI feedback
       await new Promise(resolve => setTimeout(resolve, 1500));
     
       // Show success message
-      setSuccessMessage("Task created successfully!");
+      setSuccessMessage(`${isRecurring ? 'Recurring' : 'One-time'} task created successfully!`);
       
       // Reset form
-      setTaskName("");
-      setTaskDescription("");
-      setUrgency("normal");
-      setHasDueDate(false);
-      setDueDate("");
-      setIsRecurring(false);
-      setRecurringFrequency("weekly");
-      setRecurringDay("monday");
-      setRecurringMonth("1");
-      setTaskOwner("");
-      setActivePanel("basic");
+      resetForm();
       
-     // Finally set isSubmitting to false AFTER the delay
-    setIsSubmitting(false);
-    
-    // Clear success message after a short additional delay
-    setTimeout(() => {
-      setSuccessMessage("");
-    }, 1000);
-    
-  } catch (err) {
-    console.error("Error creating task:", err);
-    setError(err.message || "Failed to create task. Please try again.");
-    setIsSubmitting(false);
-  }
-};
+      // Finally set isSubmitting to false AFTER the delay
+      setIsSubmitting(false);
+      
+      // Clear success message after a short additional delay
+      setTimeout(() => {
+        setSuccessMessage("");
+      }, 1000);
+      
+    } catch (err) {
+      console.error("❌ Error creating task:", err);
+      setError(err.message || "Failed to create task. Please try again.");
+      setIsSubmitting(false);
+    }
+  };
+
+  // Helper function to reset form
+  const resetForm = () => {
+    setTaskName("");
+    setTaskDescription("");
+    setUrgency("normal");
+    setHasDueDate(false);
+    setDueDate("");
+    setIsRecurring(false);
+    setRecurringFrequency("weekly");
+    setRecurringDay("monday");
+    setRecurringMonth("1");
+    setTaskOwner("");
+    setActivePanel("basic");
+    setSearchTerm("");
+  };
+
+  // DEBUG FUNCTION - COMMENTED OUT FOR PRODUCTION
+  /*
+  // Debug function to show cache status (remove in production)
+  const showCacheStatus = () => {
+    const status = taskCacheService.getCacheStatus();
+    console.log("Current Cache Status:", status);
+    alert(`Cache Status:\nOne-time: ${status.oneTimeCached ? 'Cached' : 'Empty'}\nRecurring: ${status.recurringCached ? 'Cached' : 'Empty'}\nDirty Flags: ${JSON.stringify(status.dirtyFlags)}`);
+  };
+  */
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
       {/* Header */}
       <div className={`text-center mb-8`}>
         <h1 className={`text-3xl font-bold ${textClass} mb-4`}>Create New Task</h1>
+        
+        {/* DEBUG UI - COMMENTED OUT FOR PRODUCTION */}
+        {/*
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4">
+            <button 
+              type="button"
+              onClick={showCacheStatus}
+              className="px-3 py-1 bg-purple-500 text-white rounded text-xs"
+            >
+              🐛 Show Cache Status
+            </button>
+          </div>
+        )}
+        */}
       </div>
       
       {/* Error Message */}
