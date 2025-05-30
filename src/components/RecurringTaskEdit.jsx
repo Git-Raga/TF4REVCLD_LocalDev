@@ -1,4 +1,4 @@
-import { X, Check } from "lucide-react";
+import { X, Check, User } from "lucide-react";
 import React, { useState, useEffect, useRef } from "react";
 
 // Edit Task Modal Component for Recurring Tasks
@@ -18,6 +18,26 @@ export const RecurringTaskEditModal = ({
   // Local state to maintain dropdown value independently from parent state
   const [localRecurringDay, setLocalRecurringDay] = useState("");
   
+  // Case owner options based on your user details
+  const caseOwners = [
+    { initials: "SS", name: "Sushanth", id: "sushanth" },
+    { initials: "WAS", name: "Wahaj", id: "wahaj" },
+    { initials: "SPK", name: "Sashi", id: "sashi" },
+    { initials: "RS", name: "Rithik", id: "rithik" },
+    { initials: "PMR", name: "Prasanna", id: "prasanna" },
+    { initials: "MMR", name: "Matta", id: "matta" },
+    { initials: "HD", name: "Harshdeep", id: "harshdeep" },
+    { initials: "GG", name: "Geethika", id: "geethika" },
+    { initials: "FH", name: "Farbeena", id: "farbeena" },
+    { initials: "MR", name: "Manu", id: "manu" },
+    { initials: "CR", name: "Chaten", id: "chaten" },
+    { initials: "AC", name: "Astha", id: "astha" },
+    { initials: "ARS", name: "Angad", id: "angad" },
+    { initials: "PD", name: "Pushkar", id: "pushkar" },
+    { initials: "NS", name: "Nishanth", id: "nishanth" },
+    { initials: "RGV", name: "Raghav", id: "raghav" }
+  ];
+  
   // Update local state when editTask changes
   useEffect(() => {
     if (editTask && editTask.recurringday) {
@@ -29,11 +49,22 @@ export const RecurringTaskEditModal = ({
   const handleWeekdayChange = (e) => {
     const newDay = e.target.value;
     setLocalRecurringDay(newDay);
-    
-    // FIXED: Update parent state immediately and correctly
+    // Update parent state with new value
     setEditTask(prevTask => ({ 
       ...prevTask, 
       recurringday: newDay 
+    }));
+  };
+
+  // Handle case owner change
+  const handleOwnerChange = (e) => {
+    const selectedInitials = e.target.value;
+    const selectedOwner = caseOwners.find(owner => owner.initials === selectedInitials);
+    
+    setEditTask(prevTask => ({
+      ...prevTask,
+      taskownerinitial: selectedOwner?.initials || "",
+      taskownername: selectedOwner?.name || ""
     }));
   };
   
@@ -53,6 +84,8 @@ export const RecurringTaskEditModal = ({
       taskname: editTask.taskname || "",
       comments: editTask.comments || "",
       recurringfreq: editTask.recurringfreq || "",
+      taskownerinitial: editTask.taskownerinitial || "",
+      taskownername: editTask.taskownername || "",
     };
     
     console.log("Saving task with data:", taskToSave); // Debug log
@@ -76,6 +109,8 @@ export const RecurringTaskEditModal = ({
     recurringday: editTask.recurringday || "",
     taskname: editTask.taskname || "",
     comments: editTask.comments || "",
+    taskownerinitial: editTask.taskownerinitial || "",
+    taskownername: editTask.taskownername || "",
   };
 
   // Generate options for monthly recurring (1-31)
@@ -224,6 +259,41 @@ export const RecurringTaskEditModal = ({
                   </select>
                 </div>
               )}
+
+              {/* Case Owner Dropdown */}
+              <div>
+                <label
+                  className={`block ${currentTheme.text} font-medium mb-2`}
+                >
+                  Case Owner
+                </label>
+                <select
+                  value={taskToEdit.taskownerinitial}
+                  onChange={handleOwnerChange}
+                  className={`w-full p-2 rounded border ${
+                    currentTheme.name === "dark"
+                      ? "bg-gray-700 border-gray-600 text-white"
+                      : "bg-white border-gray-300 text-black"
+                  } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                >
+                  <option value="">Select Case Owner</option>
+                  {caseOwners.map((owner) => (
+                    <option key={owner.id} value={owner.initials}>
+                      {owner.initials} - {owner.name}
+                    </option>
+                  ))}
+                </select>
+                
+                {/* Show selected owner preview */}
+                {taskToEdit.taskownerinitial && (
+                  <div className="mt-2 text-sm flex items-center">
+                    <User size={16} className="mr-2 text-blue-500" />
+                    <span className={currentTheme.text}>
+                      Assigned to: <strong>{taskToEdit.taskownerinitial} - {taskToEdit.taskownername}</strong>
+                    </span>
+                  </div>
+                )}
+              </div>
 
               {/* Comments */}
               <div>

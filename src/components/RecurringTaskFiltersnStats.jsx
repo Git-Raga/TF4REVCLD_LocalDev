@@ -43,7 +43,8 @@ const RecurringTaskFiltersnStats = ({
           symbol: 'W',
           name: 'Weekly Tasks',
           bgColor: 'bg-teal-400',
-          textColor: 'text-black'
+          textColor: 'text-black',
+          
         };
       case 'monthly':
         return {
@@ -88,8 +89,8 @@ const RecurringTaskFiltersnStats = ({
           {stats.weekly.total > 0 && (
             <div className="flex items-center space-x-3">
               {/* Frequency Badge */}
-              <div className="w-6 h-6 bg-teal-400 rounded-full flex items-center justify-center">
-                <span className="font-bold text-xl text-black">W</span>
+              <div className="w-10 h-10 bg-teal-400 rounded-xl flex items-center justify-center">
+                <span className="  text-xl text-black">W</span>
               </div>
               
               {/* Statistics */}
@@ -127,8 +128,8 @@ const RecurringTaskFiltersnStats = ({
           {stats.monthly.total > 0 && (
             <div className="flex items-center space-x-3">
               {/* Frequency Badge */}
-              <div className="w-6 h-6 bg-teal-800 rounded-full flex items-center justify-center">
-                <span className="font-bold text-xl text-white">M</span>
+              <div className="w-10 h-10 bg-teal-800 rounded-xl flex items-center justify-center">
+                <span className="  text-xl text-white">M</span>
               </div>
               
               {/* Statistics */}

@@ -223,14 +223,16 @@ const toggleRecurringDone = async (taskId, currentStatus) => {
     setIsCommentsModalOpen(true);
   };
 
-// Update the openEditModal function to include recurring task data
-const openEditModal = (task) => {
+  const openEditModal = (task) => {
     setEditTask({
       $id: task.$id,
       taskname: task.taskname,
       recurringfreq: task.recurringfreq || "",
       recurringday: task.recurringday || "",
       comments: task.comments || "",
+      // Include case owner fields
+      taskownerinitial: task.taskownerinitial || "",
+      taskownername: task.taskownername || "",
     });
     setIsEditModalOpen(true);
   };
@@ -249,6 +251,9 @@ const openEditModal = (task) => {
         comments: taskToSave.comments || "",
         // Preserve the recurringtask field to avoid the missing attribute error
         recurringtask: true, // This is crucial for recurring tasks
+        // Include case owner fields
+        taskownerinitial: taskToSave.taskownerinitial || "",
+        taskownername: taskToSave.taskownername || "",
       };
   
       // Always include recurringday if it exists - this is crucial
@@ -280,6 +285,8 @@ const openEditModal = (task) => {
                 taskname: taskToSave.taskname,
                 recurringday: taskToSave.recurringday || task.recurringday,
                 comments: taskToSave.comments || "",
+                taskownerinitial: taskToSave.taskownerinitial || task.taskownerinitial,
+                taskownername: taskToSave.taskownername || task.taskownername,
                 // Preserve other important fields
                 recurringtask: true,
                 recurringfreq: taskToSave.recurringfreq || task.recurringfreq,
@@ -298,6 +305,7 @@ const openEditModal = (task) => {
       setIsSaving(false);
     }
   };
+  
 
   const getInitialsBadge = (initial) => {
     if (!initial) return null;

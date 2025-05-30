@@ -181,16 +181,16 @@ const groupTasksByFrequency = (tasks) => {
     return (
       <tr className={`${currentTheme.name === "dark" ? "bg-gray-900" : "bg-gray-50"}`}>
         <td colSpan="8" className="p-0">
-          <div className={`${info.bgColor} ${info.textColor} px-6 py-2 border-l-4 border-l-blue-500`}>
+          <div className={`${info.bgColor} ${info.textColor} px-6 py-1 border-l-4 border-l-blue-500`}>
           <div className="flex items-center justify-between">
   <div className="flex-1"></div>
   <div className="flex items-center space-x-3 flex-1 justify-center">
     {/* Round symbol instead of icon */}
-    <div className="w-8 h-8 bg-white bg-opacity-20 text-black rounded-full flex items-center justify-center">
+    <div className="w-8 h-8 bg-white bg-opacity-20 text-black border-1 rounded-xl flex items-center justify-center">
       <span className="font-bold text-lg">{info.symbol}</span>
     </div>
     <div>
-      <h3 className="font-bold text-lg">{info.title}</h3>
+      <h3 className="  text-lg">{info.title}</h3>
     </div>
   </div>
   <div className="flex items-center space-x-2 flex-1 justify-end">

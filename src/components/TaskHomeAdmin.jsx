@@ -155,76 +155,85 @@ const TaskHomeAdmin = () => {
     setIsCommentsModalOpen(true);
   };
 
-  // Handle opening edit modal
-  const openEditModal = (task) => {
-    setEditTask({
-      $id: task.$id,
-      taskname: task.taskname,
-      urgency: task.urgency || "Normal",
-      taskduedate: task.taskduedate
-        ? format(new Date(task.taskduedate), "yyyy-MM-dd")
-        : "",
-      comments: task.comments || "",
-    });
-    setIsEditModalOpen(true);
-  };
+// Updated openEditModal function to include case owner data
+const openEditModal = (task) => {
+  setEditTask({
+    $id: task.$id,
+    taskname: task.taskname,
+    urgency: task.urgency || "Normal",
+    taskduedate: task.taskduedate
+      ? format(new Date(task.taskduedate), "yyyy-MM-dd")
+      : "",
+    comments: task.comments || "",
+    // Include case owner fields
+    taskownerinitial: task.taskownerinitial || "",
+    taskownername: task.taskownername || "",
+  });
+  setIsEditModalOpen(true);
+};
 
-  // Save edited task - FIXED to include all required fields
-  const saveEditedTask = async () => {
-    try {
-      // Set saving state to true
-      setIsSaving(true);
+// Updated saveEditedTask function
+const saveEditedTask = async () => {
+  try {
+    // Set saving state to true
+    setIsSaving(true);
 
-      // Prepare update data with all required fields
-      const updateData = {
-        taskname: editTask.taskname,
-        urgency: editTask.urgency,
-        taskduedate: editTask.taskduedate
-          ? new Date(editTask.taskduedate).toISOString()
-          : null,
-        comments: editTask.comments || "",
-        // CRITICAL: Include the recurringtask field to prevent the error
-        recurringtask: false, // This is a one-time task
-      };
+    // Prepare update data with all required fields including case owner
+    const updateData = {
+      taskname: editTask.taskname,
+      urgency: editTask.urgency,
+      taskduedate: editTask.taskduedate
+        ? new Date(editTask.taskduedate).toISOString()
+        : null,
+      comments: editTask.comments || "",
+      // Include case owner fields
+      taskownerinitial: editTask.taskownerinitial || "",
+      taskownername: editTask.taskownername || "",
+      // CRITICAL: Include the recurringtask field to prevent the error
+      recurringtask: false, // This is a one-time task
+    };
 
-      // Update the task in the database
-      await databases.updateDocument(
-        DATABASE_ID,
-        COLLECTIONS.TASK_DETAILS,
-        editTask.$id,
-        updateData
-      );
+    // Update the task in the database
+    await databases.updateDocument(
+      DATABASE_ID,
+      COLLECTIONS.TASK_DETAILS,
+      editTask.$id,
+      updateData
+    );
 
-      // Update local state
-      setTasks((prevTasks) =>
-        prevTasks.map((task) =>
-          task.$id === editTask.$id
-            ? {
-                ...task,
-                taskname: editTask.taskname,
-                urgency: editTask.urgency,
-                taskduedate: editTask.taskduedate
-                  ? new Date(editTask.taskduedate).toISOString()
-                  : null,
-                comments: editTask.comments,
-                recurringtask: false, // Preserve this field in local state
-              }
-            : task
-        )
-      );
+    // Update local state
+    setTasks((prevTasks) =>
+      prevTasks.map((task) =>
+        task.$id === editTask.$id
+          ? {
+              ...task,
+              taskname: editTask.taskname,
+              urgency: editTask.urgency,
+              taskduedate: editTask.taskduedate
+                ? new Date(editTask.taskduedate).toISOString()
+                : null,
+              comments: editTask.comments,
+              taskownerinitial: editTask.taskownerinitial || "",
+              taskownername: editTask.taskownername || "",
+              recurringtask: false, // Preserve this field in local state
+            }
+          : task
+      )
+    );
 
-      // Wait for 1 second
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    // Wait for 1 second
+    await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      // Reset saving state and close modal
-      setIsSaving(false);
-      setIsEditModalOpen(false);
-    } catch (err) {
-      console.error("Error updating task:", err);
-      alert("Failed to update task. Please try again.");
-      setIsSaving(false);
-    }
-  };
+    // Reset saving state and close modal
+    setIsSaving(false);
+    setIsEditModalOpen(false);
+  } catch (err) {
+    console.error("Error updating task:", err);
+    alert("Failed to update task. Please try again.");
+    setIsSaving(false);
+  }
+};
+
 
   const getInitialsBadge = (initial) => {
     if (!initial) return null;

@@ -1,4 +1,4 @@
-import { X, Check, Calendar } from "lucide-react";
+import { X, Check, Calendar, User } from "lucide-react";
 import React, { useState, useEffect } from "react";
 
 // Edit Task Modal Component for One-Time Tasks
@@ -11,6 +11,27 @@ export const OneTimeTaskEditModal = ({
   isSaving,
   currentTheme,
 }) => {
+  // Case owner options based on your user details image
+  const caseOwners = [
+    { initials: "SS", name: "Sushanth", id: "sushanth" },
+    { initials: "WAS", name: "Wahaj", id: "wahaj" },
+    { initials: "SPK", name: "Sashi", id: "sashi" },
+    { initials: "RS", name: "Rithik", id: "rithik" },
+    { initials: "PMR", name: "Prasanna", id: "prasanna" },
+    { initials: "MMR", name: "Matta", id: "matta" },
+    { initials: "HD", name: "Harshdeep", id: "harshdeep" },
+    { initials: "GG", name: "Geethika", id: "geethika" },
+    { initials: "FH", name: "Farbeena", id: "farbeena" },
+    { initials: "MR", name: "Manu", id: "manu" },
+    { initials: "CR", name: "Chaten", id: "chaten" },
+    { initials: "AC", name: "Astha", id: "astha" },
+    { initials: "ARS", name: "Angad", id: "angad" },
+    { initials: "RS", name: "Rashi", id: "rashi" },
+    { initials: "PD", name: "Pushkar", id: "pushkar" },
+    { initials: "NS", name: "Nishanth", id: "nishanth" },
+    { initials: "RGV", name: "Raghav", id: "raghav" }
+  ];
+
   if (!isOpen) return null;
 
   const taskToEdit = {
@@ -19,10 +40,23 @@ export const OneTimeTaskEditModal = ({
     urgency: editTask.urgency || "Normal",
     taskduedate: editTask.taskduedate || "",
     comments: editTask.comments || "",
+    taskownerinitial: editTask.taskownerinitial || "",
+    taskownername: editTask.taskownername || "",
   };
 
   const handleSave = () => {
     onSave(taskToEdit);
+  };
+
+  const handleOwnerChange = (e) => {
+    const selectedInitials = e.target.value;
+    const selectedOwner = caseOwners.find(owner => owner.initials === selectedInitials);
+    
+    setEditTask({
+      ...taskToEdit,
+      taskownerinitial: selectedOwner?.initials || "",
+      taskownername: selectedOwner?.name || ""
+    });
   };
 
   return (
@@ -124,6 +158,41 @@ export const OneTimeTaskEditModal = ({
                       day: 'numeric', 
                       year: 'numeric'
                     })}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Case Owner Dropdown */}
+            <div>
+              <label
+                className={`block ${currentTheme.text} font-medium mb-2`}
+              >
+                Case Owner
+              </label>
+              <select
+                value={taskToEdit.taskownerinitial}
+                onChange={handleOwnerChange}
+                className={`w-full p-2 rounded border ${
+                  currentTheme.name === "dark"
+                    ? "bg-gray-700 border-gray-600 text-white"
+                    : "bg-white border-gray-300 text-black"
+                } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              >
+                <option value="">Select Case Owner</option>
+                {caseOwners.map((owner) => (
+                  <option key={owner.id} value={owner.initials}>
+                    {owner.initials} - {owner.name}
+                  </option>
+                ))}
+              </select>
+              
+              {/* Show selected owner preview */}
+              {taskToEdit.taskownerinitial && (
+                <div className="mt-2 text-sm flex items-center">
+                  <User size={16} className="mr-2 text-blue-500" />
+                  <span className={currentTheme.text}>
+                    Assigned to: <strong>{taskToEdit.taskownerinitial} - {taskToEdit.taskownername}</strong>
                   </span>
                 </div>
               )}
