@@ -6,17 +6,14 @@
 
 
  
+ TODO // BUild the UserView to view only thier tasks
+ TODO // Logic to Done to Complete section 
  
  
-
-// taskloading from DB everytime - to fix
-
-//first time loading - image issue to fix
  
  
 TODO // BUlk task assignment for all managers and all SL's
-TODO // BUild the UserView 
-TODO // Logic to Done to Complete section 
+
 TODO // BUild the Projects
 
 TODO // build the bashboard logic

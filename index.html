@@ -3,13 +3,85 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="/Logo2.png" />
-  <link rel="shortcut icon" type="image/png" href="/Logo2.png" />
-  <link rel="apple-touch-icon" href="/teamwork.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TaskFORCE - RC</title>
+  
+  <!-- Preload critical CSS -->
+  <link rel="preload" href="/src/index.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="/src/index.css"></noscript>
+  
+  <!-- Critical inline CSS for first paint -->
+  <style>
+    /* Critical styles to prevent FOUC */
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    #root { min-height: 100vh; }
+    
+    /* Fallback layout styles */
+    .min-h-screen { min-height: 100vh; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-center { justify-content: center; }
+    .w-1\/2 { width: 50%; }
+    .bg-white { background-color: #ffffff; }
+    .bg-gray-50 { background-color: #f9fafb; }
+    .text-center { text-align: center; }
+    .p-6 { padding: 1.5rem; }
+    .mb-8 { margin-bottom: 2rem; }
+    .border { border: 1px solid #d1d5db; }
+    .rounded-xl { border-radius: 0.75rem; }
+    
+    /* Loading animation */
+    .css-loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #f9fafb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    
+    .css-loaded .css-loading {
+      display: none;
+    }
+  </style>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root">
+    <div class="css-loading">
+      <div style="text-align: center;">
+        <div style="width: 48px; height: 48px; border: 3px solid #e5e7eb; border-top: 3px solid #2563eb; border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px;"></div>
+        <p style="color: #6b7280;">Loading TaskForce...</p>
+      </div>
+    </div>
+  </div>
+  
+  <style>
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+  
   <script type="module" src="/src/main.jsx"></script>
+  
+  <!-- CSS loading detection script -->
+  <script>
+    // Mark CSS as loaded after a delay
+    setTimeout(() => {
+      document.documentElement.classList.add('css-loaded');
+    }, 500);
+    
+    // Also mark as loaded when window loads
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        document.documentElement.classList.add('css-loaded');
+      }, 100);
+    });
+  </script>
 </body>
 </html>

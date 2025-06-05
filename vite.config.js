@@ -14,15 +14,41 @@ export default defineConfig({
     hmr: {
       overlay: false
     },
-    cache: false
+    // Remove cache: false - this was causing issues
   },
-  // Add these new configurations
-  optimizeDeps: {
-    force: true  // Force dependency pre-bundling
+  
+  // CSS-specific configurations to fix loading issues
+  css: {
+    devSourcemap: true,
+    preprocessorOptions: {
+      css: {
+        charset: false
+      }
+    }
   },
+  
+  // Updated build configuration
   build: {
+    cssCodeSplit: false, // Load all CSS together
     commonjsOptions: {
       transformMixedEsModules: true
+    },
+    rollupOptions: {
+      output: {
+        manualChunks: undefined, // Prevent CSS splitting
+      }
     }
+  },
+  
+  // Updated optimizeDeps configuration
+  optimizeDeps: {
+    force: true,
+    include: ['react', 'react-dom', 'react-router-dom'], // Pre-bundle critical deps
+    exclude: ['@tailwindcss/vite'] // Don't pre-bundle Tailwind plugin
+  },
+  
+  // Add esbuild configuration for faster processing
+  esbuild: {
+    logOverride: { 'this-is-undefined-in-esm': 'silent' }
   }
 })

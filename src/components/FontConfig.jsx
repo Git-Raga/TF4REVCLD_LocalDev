@@ -1,8 +1,21 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 
 const FontConfig = ({ children }) => {
   // Main font configuration - change this to update the font throughout the app
   const fontFamily = 'Titillium Web';
+
+  useEffect(() => {
+    const link = document.createElement('link');
+    link.rel = 'preload';  // Preload instead of direct stylesheet
+    link.as = 'style';
+    link.href = 'https://fonts.googleapis.com/css2?family=Titillium+Web:wght@200;300;400;600;700;900&display=swap';
+    
+    link.onload = () => {
+      link.rel = 'stylesheet'; // Convert to stylesheet after preload
+    };
+    
+    document.head.appendChild(link);
+  }, []);
 
   return (
     <>

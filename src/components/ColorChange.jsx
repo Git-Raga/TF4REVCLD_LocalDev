@@ -25,8 +25,6 @@ export const ThemeProvider = ({ children }) => {
       borderColor: "border-gray-800",
       divider: "bg-gray-800",
 
-      
-
       // Icon colors
       iconColor: "text-gray-400",
 
@@ -36,11 +34,11 @@ export const ThemeProvider = ({ children }) => {
       // Hover and interactive states
       hoverBackground: "hover:bg-gray-700",
 
-       // Navigation and interaction states
-    navItem: 'hover:bg-gray-700',
-    activeNavItem: 'bg-white', // Change from 'bg-gray-800' to 'bg-white'
-    navItemText: 'text-gray-300',
-    activeNavItemText: 'text-black', // Add this new property
+      // Navigation and interaction states
+      navItem: 'hover:bg-gray-700',
+      activeNavItem: 'bg-white', // Change from 'bg-gray-800' to 'bg-white'
+      navItemText: 'text-gray-300',
+      activeNavItemText: 'text-black', // Add this new property
 
       // Theme-specific styles
       themeToggle: {
@@ -48,11 +46,6 @@ export const ThemeProvider = ({ children }) => {
         dark: "text-white hover:bg-gray-600",
         light: "hover:bg-gray-300",
       },
-
-
-
-
-      
     },
     light: {
       // Add name property
@@ -72,13 +65,12 @@ export const ThemeProvider = ({ children }) => {
       borderColor: "border-gray-200",
       divider: "bg-gray-300",
 
-       // Navigation and interaction states
-    navItem: 'hover:bg-gray-200',
-    activeNavItem: 'bg-gray-900', // Change from 'bg-gray-200' to 'bg-gray-900'
-    navItemText: 'text-gray-800',
-    activeNavItemText: 'text-white', // Add this new property
+      // Navigation and interaction states
+      navItem: 'hover:bg-gray-200',
+      activeNavItem: 'bg-gray-900', // Change from 'bg-gray-200' to 'bg-gray-900'
+      navItemText: 'text-gray-800',
+      activeNavItemText: 'text-white', // Add this new property
 
-      
       // Icon colors
       iconColor: "text-gray-600",
 
@@ -97,39 +89,52 @@ export const ThemeProvider = ({ children }) => {
     },
   };
 
- // Initialize theme from local storage
-// Initialize theme from local storage
-const [isDarkTheme, setIsDarkTheme] = useState(() => {
-  try {
-    const savedTheme = localStorage.getItem("theme");
-    console.log("Initial load - Saved theme from localStorage:", savedTheme);
-    
-    // If no saved theme, check system preference
-    if (savedTheme === null) {
-      const systemPreference = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      console.log("No saved theme, using system preference:", systemPreference);
-      return systemPreference;
+  // Initialize theme from local storage
+  const [isDarkTheme, setIsDarkTheme] = useState(() => {
+    try {
+      const savedTheme = localStorage.getItem("theme");
+      console.log("Initial load - Saved theme from localStorage:", savedTheme);
+      
+      // If no saved theme, check system preference
+      if (savedTheme === null) {
+        const systemPreference = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        console.log("No saved theme, using system preference:", systemPreference);
+        return systemPreference;
+      }
+      
+      const isDark = savedTheme === "dark";
+      console.log("Initial load - Setting theme to dark:", isDark);
+      return isDark;
+    } catch (error) {
+      console.error("Error reading theme from localStorage:", error);
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
     }
-    
-    const isDark = savedTheme === "dark";
-    console.log("Initial load - Setting theme to dark:", isDark);
-    return isDark;
-  } catch (error) {
-    console.error("Error reading theme from localStorage:", error);
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  }
-});
+  });
+
   // Determine current theme based on isDarkTheme
   const currentTheme = isDarkTheme ? themeClasses.dark : themeClasses.light;
+  
+  // Create theme variable for useEffect
+  const theme = isDarkTheme ? 'dark' : 'light';
+
+  // Apply theme to document with delay to ensure CSS is loaded
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      document.documentElement.setAttribute('data-theme', theme);
+      document.body.className = theme === 'dark' ? 'dark' : '';
+    }, 50);
+    
+    return () => clearTimeout(timer);
+  }, [theme]);
 
   // Update local storage whenever theme changes
   useEffect(() => {
     try {
-      localStorage.setItem("theme", isDarkTheme ? "dark" : "light");
+      localStorage.setItem("theme", theme);
     } catch (error) {
       console.error("Error saving theme to localStorage", error);
     }
-  }, [isDarkTheme]);
+  }, [theme]);
 
   // Toggle theme function
   const toggleTheme = () => {
@@ -143,6 +148,7 @@ const [isDarkTheme, setIsDarkTheme] = useState(() => {
         isDarkTheme,
         toggleTheme,
         themeClasses,
+        theme, // Add theme to the context value
       }}
     >
       {children}

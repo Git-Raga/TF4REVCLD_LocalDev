@@ -23,7 +23,15 @@ class ErrorBoundary extends React.Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div>
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          minHeight: '100vh',
+          padding: '20px',
+          textAlign: 'center'
+        }}>
           <h1>Something went wrong.</h1>
           <button onClick={() => window.location.reload()}>
             Reload Page
@@ -40,6 +48,8 @@ function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return !!localStorage.getItem('user');
   });
+  
+  const [isAppReady, setIsAppReady] = useState(false);
 
   const initializeApp = useCallback(() => {
     try {
@@ -75,6 +85,48 @@ function App() {
     // Initialize app
     initializeApp();
 
+    // Smart loading detection with fallback timer
+    let isReady = false;
+    
+    const setReady = () => {
+      if (!isReady) {
+        isReady = true;
+        setIsAppReady(true);
+        
+        // Remove any loading screens from HTML
+        const loadingElements = document.querySelectorAll('.css-loading, .initial-loading');
+        loadingElements.forEach(el => {
+          if (el && el.parentNode) {
+            el.style.display = 'none';
+          }
+        });
+        
+        // Mark CSS as loaded
+        document.documentElement.classList.add('css-loaded');
+      }
+    };
+
+    // Check if resources are already loaded
+    if (document.readyState === 'complete') {
+      setTimeout(setReady, 100); // Minimal delay if already loaded
+    } else {
+      // Wait for window load event
+      const handleLoad = () => setReady();
+      window.addEventListener('load', handleLoad);
+      
+      // Fallback timer (reduced to 500ms)
+      const fallbackTimer = setTimeout(setReady, 500);
+      
+      // Cleanup function
+      const cleanup = () => {
+        window.removeEventListener('load', handleLoad);
+        clearTimeout(fallbackTimer);
+      };
+      
+      // Store cleanup for later use
+      window._appCleanup = cleanup;
+    }
+
     // Listen for storage changes
     const handleStorageChange = (event) => {
       if (event.key === 'user') {
@@ -82,20 +134,51 @@ function App() {
       }
     };
 
-    // Add error event listener
-    const handleError = (event) => {
-      console.error('Uncaught error:', event.error);
-    };
-
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('error', handleError);
 
-    // Cleanup
     return () => {
+      if (window._appCleanup) {
+        window._appCleanup();
+        delete window._appCleanup;
+      }
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('error', handleError);
     };
   }, [initializeApp]);
+
+  // Show loading until app is ready
+  if (!isAppReady) {
+    return (
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        backgroundColor: '#f9fafb',
+        fontFamily: 'system-ui, -apple-system, sans-serif'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{
+            width: '48px',
+            height: '48px',
+            border: '3px solid #e5e7eb',
+            borderTop: '3px solid #2563eb',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px'
+          }}></div>
+          <p style={{ color: '#6b7280', margin: 0 }}>Loading TaskForce...</p>
+        </div>
+        
+        {/* Add keyframes for spinner */}
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <ErrorBoundary>
@@ -110,14 +193,9 @@ function App() {
             <Route path="/login" element={<Login />} />
             
             <Route 
-  path="/landing" 
-  element={
-    (() => {
-      
-      return isAuthenticated ? <LandingPage /> : <Navigate to="/login" replace />;
-    })()
-  }
-/>
+              path="/landing" 
+              element={isAuthenticated ? <LandingPage /> : <Navigate to="/login" replace />}
+            />
             
             <Route path="*" element={<Navigate to="/login" replace />} />
           </Routes>
