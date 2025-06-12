@@ -28,6 +28,7 @@ import {
 import FontConfig from './FontConfig';
 import { useNavigate } from 'react-router-dom';
 import RecurringTask from './RecurringTask';
+import RecurringTaskUser from './RecurringTaskUser'; // Add this import
 
 // Custom hook for connection setup
 const useConnectionSetup = () => {
@@ -348,16 +349,27 @@ const LandingPage = () => {
   const toggleSidebar = () => {
     setSidebarCollapsed(prev => !prev);
   };
+// UPDATED: Role-based rendering for one-time tasks
+const renderHomeContent = () => {
+  // Only SuperAdmin sees TaskHomeAdmin (all tasks)
+  if (userRole === 'SuperAdmin') {
+    return <TaskHomeAdmin theme={theme} />;
+  } else {
+    // Admin and User both see TaskHomeUser (their own tasks only with caching)
+    return <TaskHomeUser theme={theme} />;
+  }
+};
 
-  const renderHomeContent = () => {
-    // Check if user is Admin or SuperAdmin
-    if (userRole === 'Admin' || userRole === 'SuperAdmin') {
-      return <TaskHomeAdmin theme={theme} />;
-    } else {
-      // Regular user view
-      return <TaskHomeUser theme={theme} />;
-    }
-  };
+// UPDATED: Role-based rendering for recurring tasks
+const renderRecurringContent = () => {
+  // Only SuperAdmin sees all recurring tasks
+  if (userRole === 'SuperAdmin') {
+    return <RecurringTask theme={theme} />; // SuperAdmin sees all recurring tasks
+  } else {
+    // Admin and User both see only their assigned recurring tasks
+    return <RecurringTaskUser theme={theme} />;
+  }
+};
 
   // Add button theme and input background to currentTheme
   const theme = {
@@ -420,7 +432,7 @@ const LandingPage = () => {
     setActiveNavItem('Logout');
   }, []);
 
-  // Render the appropriate content based on the active nav item
+  // UPDATED: Render the appropriate content based on the active nav item
   const renderContent = () => {
     switch (activeNavItem) {
       case 'Home':
@@ -457,7 +469,7 @@ const LandingPage = () => {
           );
           
           case 'reoccur':
-            return <RecurringTask theme={theme} />;
+            return renderRecurringContent(); // NEW: Role-based recurring tasks
           default:
             return <HomeContent theme={theme} />;
         }

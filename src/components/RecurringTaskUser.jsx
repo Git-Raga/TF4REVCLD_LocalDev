@@ -4,13 +4,13 @@ import { Query } from "appwrite";
 import { format, differenceInDays } from "date-fns";
 import { useTheme } from "./ColorChange";
 import { getSortedAndFilteredTasks, calculateTaskStats } from "./SortingLogic";
-import TableDisplay from "./TableDisplay";
-import TaskFiltersnStats from "./TaskFiltersnStats";
+import RecurringTaskFiltersnStats from "./RecurringTaskFiltersnStats";
 import { DeleteConfirmationModal, CommentsModal } from "./ModelOps";
-import { OneTimeTaskEditModal } from "./OneTimeTaskEdit";
+import { RecurringTaskEditModal } from "./RecurringTaskEdit";
+import RecurringTaskTable from './RecurringTaskTable';
 import taskCacheService from "./TaskCacheService"; // Import cache service
 
-const TaskHomeUser = ({ theme }) => {
+const RecurringTaskUser = ({ theme }) => {
   const { currentTheme } = useTheme();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,8 +20,7 @@ const TaskHomeUser = ({ theme }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [sortState, setSortState] = useState("default"); // 'default', 'asc', or 'desc'
   const [userEmail, setUserEmail] = useState("");
-  const [userName, setUserName] = useState(""); // Added userName state
-  const [userRole, setUserRole] = useState("");
+  const [userRole, setUserRole] = useState(""); // Added userRole state
   
   // Modal states
   const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
@@ -32,8 +31,8 @@ const TaskHomeUser = ({ theme }) => {
   const [editTask, setEditTask] = useState({
     $id: "",
     taskname: "",
-    urgency: "Normal",
-    taskduedate: "",
+    recurringfreq: "",
+    recurringday: "",
     comments: "",
   });
 
@@ -50,9 +49,9 @@ const TaskHomeUser = ({ theme }) => {
     setIsDeleteModalOpen(true);
   };
 
-  // UPDATED: Fetch tasks using cache service - Admin and User see only their own tasks (filtered by name)
+  // UPDATED: Fetch recurring tasks using cache service - Admin and User see only their own tasks
   useEffect(() => {
-    const fetchTasks = async () => {
+    const fetchUserRecurringTasks = async () => {
       try {
         setLoading(true);
         setError(null);
@@ -60,53 +59,122 @@ const TaskHomeUser = ({ theme }) => {
         // Get current user info from localStorage
         const storedUser = localStorage.getItem('user');
         let currentUserEmail = null;
-        let currentUserName = null; // Added userName variable
         let currentUserRole = null;
         
         if (storedUser) {
           const userData = JSON.parse(storedUser);
           currentUserEmail = userData.useremail;
-          currentUserName = userData.username || userData.name; // Get username from stored data
-          currentUserRole = userData.role; // Use 'role' based on your database structure
+          currentUserRole = userData.role;
           setUserEmail(currentUserEmail);
-          setUserName(currentUserName); // Set userName state
           setUserRole(currentUserRole);
         }
         
-        if (!currentUserName) {
-          throw new Error("User name information not found");
+        if (!currentUserEmail) {
+          throw new Error("User information not found");
         }
         
-        // Use cache service to get tasks
-        let fetchedTasks = await taskCacheService.getTasks('onetime');
+        // UPDATED: Use cache service to get recurring tasks
+        let fetchedTasks = await taskCacheService.getTasks('recurring');
         
-        // UPDATED: For TaskHomeUser component: Admin and User roles see only their own tasks (filtered by name)
-        // (SuperAdmin users won't reach this component as they use TaskHomeAdmin)
+        // For RecurringTaskUser component: Admin and User roles see only their own tasks
+        // (SuperAdmin users won't reach this component as they use RecurringTaskAdmin)
         fetchedTasks = fetchedTasks.filter(task => 
-          task.taskownername === currentUserName
+          task.taskowneremail === currentUserEmail && task.recurringtask === true
         );
         
         setTasks(fetchedTasks);
         setLoading(false);
         
         // Log cache status for debugging
-        console.log('TaskHomeUser - Cache Status:', taskCacheService.getCacheStatus());
-        console.log('TaskHomeUser - User Role:', currentUserRole);
-        console.log('TaskHomeUser - User Email:', currentUserEmail);
-        console.log('TaskHomeUser - User Name:', currentUserName); // Added name logging
-        console.log('TaskHomeUser - Filtered Tasks Count:', fetchedTasks.length);
+        console.log('RecurringTaskUser - Cache Status:', taskCacheService.getCacheStatus());
+        console.log('RecurringTaskUser - User Role:', currentUserRole);
+        console.log('RecurringTaskUser - User Email:', currentUserEmail);
+        console.log('RecurringTaskUser - Filtered Recurring Tasks Count:', fetchedTasks.length);
         
       } catch (err) {
-        console.error("Error fetching tasks:", err);
-        setError("Failed to load tasks. Please try again.");
+        console.error("Error fetching user recurring tasks:", err);
+        setError("Failed to load your recurring tasks. Please try again.");
         setLoading(false);
       }
     };
 
-    fetchTasks();
+    fetchUserRecurringTasks();
   }, []);
 
-  // UPDATED: Toggle task completion with cache update
+  // Fixed getSortedRecurringTasks function
+  const getSortedRecurringTasks = (tasks, sortState) => {
+    // Sort by frequency first (weekly before monthly)
+    let sortedTasks = [...tasks].sort((a, b) => {
+      // Define frequency order: weekly (1), monthly (2), daily (3), yearly (4)
+      const frequencyOrder = { 'weekly': 1, 'monthly': 2, 'daily': 3, 'yearly': 4 };
+      const orderA = frequencyOrder[a.recurringfreq] || 5;
+      const orderB = frequencyOrder[b.recurringfreq] || 5;
+      
+      if (orderA !== orderB) return orderA - orderB;
+      
+      // If weekly tasks, sort by day of week
+      if (a.recurringfreq === 'weekly' && a.recurringfreq === b.recurringfreq) {
+        const weekDays = {
+          'sunday': 0, 'monday': 1, 'tuesday': 2, 'wednesday': 3,
+          'thursday': 4, 'friday': 5, 'saturday': 6
+        };
+        const dayOrderA = weekDays[a.recurringday?.toLowerCase()] !== undefined ? weekDays[a.recurringday.toLowerCase()] : 7;
+        const dayOrderB = weekDays[b.recurringday?.toLowerCase()] !== undefined ? weekDays[b.recurringday.toLowerCase()] : 7;
+        return dayOrderA - dayOrderB;
+      }
+      
+      // If monthly tasks, sort by date number
+      if (a.recurringfreq === 'monthly' && a.recurringfreq === b.recurringfreq) {
+        const dayA = parseInt(a.recurringday) || 999;
+        const dayB = parseInt(b.recurringday) || 999;
+        return dayA - dayB;
+      }
+      
+      return 0;
+    });
+    
+    return sortedTasks;
+  };
+
+  // UPDATED: Toggle recurring done status with cache update
+  const toggleRecurringDone = async (taskId, currentStatus) => {
+    try {
+      // Set animating state for task
+      setAnimatingTaskId(taskId);
+
+      // Update the task in the database
+      await databases.updateDocument(
+        DATABASE_ID,
+        COLLECTIONS.TASK_DETAILS,
+        taskId,
+        {
+          recurringdone: !currentStatus,
+        }
+      );
+
+      // Update the local state
+      const updatedTasks = tasks.map((task) =>
+        task.$id === taskId
+          ? { ...task, recurringdone: !currentStatus }
+          : task
+      );
+      setTasks(updatedTasks);
+
+      // Update cache with the modified task
+      const updatedTask = updatedTasks.find(task => task.$id === taskId);
+      taskCacheService.updateTaskInCache('recurring', updatedTask);
+
+      // Wait for animation to complete before clearing animating state
+      setTimeout(() => {
+        setAnimatingTaskId(null);
+      }, 500);
+    } catch (err) {
+      console.error("Error toggling recurring done status:", err);
+      setAnimatingTaskId(null);
+    }
+  };
+
+  // UPDATED: Toggle task completion status with cache update
   const toggleTaskCompletion = async (taskId, currentCompletionStatus) => {
     try {
       // Set animating state for task
@@ -132,7 +200,7 @@ const TaskHomeUser = ({ theme }) => {
 
       // Update cache with the modified task
       const updatedTask = updatedTasks.find(task => task.$id === taskId);
-      taskCacheService.updateTaskInCache('onetime', updatedTask);
+      taskCacheService.updateTaskInCache('recurring', updatedTask);
 
       // Wait for animation to complete before clearing animating state
       setTimeout(() => {
@@ -162,7 +230,7 @@ const TaskHomeUser = ({ theme }) => {
       );
 
       // Remove from cache
-      taskCacheService.removeTaskFromCache('onetime', deleteTask.$id);
+      taskCacheService.removeTaskFromCache('recurring', deleteTask.$id);
 
       // Wait for animation
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -171,8 +239,8 @@ const TaskHomeUser = ({ theme }) => {
       setIsDeleting(false);
       setIsDeleteModalOpen(false);
     } catch (err) {
-      console.error("Error deleting task:", err);
-      alert("Failed to delete task. Please try again.");
+      console.error("Error deleting recurring task:", err);
+      alert("Failed to delete recurring task. Please try again.");
       setIsDeleting(false);
     }
   };
@@ -200,10 +268,8 @@ const TaskHomeUser = ({ theme }) => {
     setEditTask({
       $id: task.$id,
       taskname: task.taskname,
-      urgency: task.urgency || "Normal",
-      taskduedate: task.taskduedate
-        ? format(new Date(task.taskduedate), "yyyy-MM-dd")
-        : "",
+      recurringfreq: task.recurringfreq || "",
+      recurringday: task.recurringday || "",
       comments: task.comments || "",
       // Include case owner fields
       taskownerinitial: task.taskownerinitial || "",
@@ -212,67 +278,74 @@ const TaskHomeUser = ({ theme }) => {
     setIsEditModalOpen(true);
   };
 
-  // UPDATED: Save edited task with cache update
-  const saveEditedTask = async () => {
+  // UPDATED: Save edited recurring task with cache update
+  const saveEditedTask = async (customTask = null) => {
     try {
-      // Set saving state to true
+      // Use either the custom task passed or the editTask state
+      const taskToSave = customTask || editTask;
+      
       setIsSaving(true);
+      console.log("Saving recurring task:", taskToSave); // For debugging
 
-      // Prepare update data with all required fields including case owner
+      // Prepare update data - IMPORTANT: Only include fields that should be updated
       const updateData = {
-        taskname: editTask.taskname,
-        urgency: editTask.urgency,
-        taskduedate: editTask.taskduedate
-          ? new Date(editTask.taskduedate).toISOString()
-          : null,
-        comments: editTask.comments || "",
+        taskname: taskToSave.taskname,
+        comments: taskToSave.comments || "",
+        // Preserve the recurringtask field to avoid the missing attribute error
+        recurringtask: true, // This is crucial for recurring tasks
         // Include case owner fields
-        taskownerinitial: editTask.taskownerinitial || "",
-        taskownername: editTask.taskownername || "",
-        // CRITICAL: Include the recurringtask field to prevent the error
-        recurringtask: false, // This is a one-time task
+        taskownerinitial: taskToSave.taskownerinitial || "",
+        taskownername: taskToSave.taskownername || "",
       };
+
+      // Always include recurringday if it exists - this is crucial
+      if (taskToSave.recurringday) {
+        updateData.recurringday = taskToSave.recurringday;
+      }
+
+      // Include recurring frequency to maintain consistency
+      if (taskToSave.recurringfreq) {
+        updateData.recurringfreq = taskToSave.recurringfreq;
+      }
+
+      console.log("Update data:", updateData); // For debugging
 
       // Update the task in the database
       await databases.updateDocument(
         DATABASE_ID,
         COLLECTIONS.TASK_DETAILS,
-        editTask.$id,
+        taskToSave.$id,
         updateData
       );
 
       // Update local state
       const updatedTasks = tasks.map((task) =>
-        task.$id === editTask.$id
+        task.$id === taskToSave.$id
           ? {
               ...task,
-              taskname: editTask.taskname,
-              urgency: editTask.urgency,
-              taskduedate: editTask.taskduedate
-                ? new Date(editTask.taskduedate).toISOString()
-                : null,
-              comments: editTask.comments,
-              taskownerinitial: editTask.taskownerinitial || "",
-              taskownername: editTask.taskownername || "",
-              recurringtask: false, // Preserve this field in local state
+              taskname: taskToSave.taskname,
+              recurringday: taskToSave.recurringday || task.recurringday,
+              comments: taskToSave.comments || "",
+              taskownerinitial: taskToSave.taskownerinitial || task.taskownerinitial,
+              taskownername: taskToSave.taskownername || task.taskownername,
+              // Preserve other important fields
+              recurringtask: true,
+              recurringfreq: taskToSave.recurringfreq || task.recurringfreq,
             }
           : task
       );
       setTasks(updatedTasks);
 
       // Update cache with the modified task
-      const updatedTask = updatedTasks.find(task => task.$id === editTask.$id);
-      taskCacheService.updateTaskInCache('onetime', updatedTask);
+      const updatedTask = updatedTasks.find(task => task.$id === taskToSave.$id);
+      taskCacheService.updateTaskInCache('recurring', updatedTask);
 
-      // Wait for 1 second
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Reset saving state and close modal
+      await new Promise((resolve) => setTimeout(resolve, 500));
       setIsSaving(false);
       setIsEditModalOpen(false);
     } catch (err) {
-      console.error("Error updating task:", err);
-      alert("Failed to update task. Please try again.");
+      console.error("Error saving recurring task:", err);
+      alert("Failed to save recurring task. Please try again.");
       setIsSaving(false);
     }
   };
@@ -345,12 +418,10 @@ const TaskHomeUser = ({ theme }) => {
       new Date() > new Date(dueDate) &&
       new Date(dueDate).toDateString() !== new Date().toDateString();
 
-    // In your getUrgencyBadge function
     if (urgency === "Critical" && isLate) {
       bgColor = "bg-red-700"; // Darker, more intense red
       text = "CRITICAL-LATE";
       
-      // Instead of using a class
       return (
         <div
           className={`${bgColor} text-white px-3 py-1 rounded text-xs inline-block text-center w-25`}
@@ -394,8 +465,17 @@ const TaskHomeUser = ({ theme }) => {
     );
   };
   
-  // Get due date badge
-  const getDueDateBadge = (dueDate) => {
+  // Get due date badge (modify this function)
+  const getDueDateBadge = (dueDate, recurringDay) => {
+    // For recurring tasks, use recurringday instead of taskduedate
+    if (recurringDay) {
+      return (
+        <div className="bg-red-500 text-xs text-white px-3 py-1 rounded text-sm inline-block text-center w-20">
+          {recurringDay}
+        </div>
+      );
+    }
+    
     if (!dueDate) return null;
 
     const date = new Date(dueDate);
@@ -422,42 +502,31 @@ const TaskHomeUser = ({ theme }) => {
 
     return `${baseClass} ${completedClass} hover:bg-opacity-90 transition duration-150 ease-in-out`;
   };
-
-  // Use the imported function for sorting and filtering tasks
-  const sortedAndFilteredTasks = getSortedAndFilteredTasks(
-    tasks,
-    showActiveOnly,
-    sortState
-  );
-
+  
+  const sortedAndFilteredTasks = getSortedRecurringTasks(tasks, sortState);
   // Use the imported function to calculate task statistics
   const taskStats = calculateTaskStats(tasks);
 
-  // UPDATED: Function to refresh data from database using cache service (name-based filtering)
+  // UPDATED: Function to refresh data from database using cache service
   const refreshFromDatabase = async () => {
     try {
       setLoading(true);
       
       // Force refresh from database through cache service
-      let freshTasks = await taskCacheService.getTasks('onetime', true);
+      let freshTasks = await taskCacheService.getTasks('recurring', true);
       
-      // UPDATED: Apply filtering for current user based on name (Admin and User see only their own tasks)
+      // Apply filtering for current user (Admin and User see only their own tasks)
       freshTasks = freshTasks.filter(task => 
-        task.taskownername === userName
+        task.taskowneremail === userEmail && task.recurringtask === true
       );
       
       setTasks(freshTasks);
       setLoading(false);
     } catch (err) {
-      console.error("Error refreshing tasks:", err);
-      setError("Failed to refresh tasks. Please try again.");
+      console.error("Error refreshing recurring tasks:", err);
+      setError("Failed to refresh your recurring tasks. Please try again.");
       setLoading(false);
     }
-  };
-
-  // Page title for User and Admin roles
-  const getPageTitle = () => {
-    return `My One Time ☝ Tasks`;
   };
 
   return (
@@ -468,7 +537,7 @@ const TaskHomeUser = ({ theme }) => {
         {process.env.NODE_ENV === 'development' && (
           <div className="mb-2 p-2 bg-blue-100 text-blue-800 text-xs rounded">
             📦 Cache Status: {JSON.stringify(taskCacheService.getCacheStatus())}
-            | User Role: {userRole} | User Email: {userEmail} | User Name: {userName} | Tasks Count: {tasks.length}
+            | User Role: {userRole} | User Email: {userEmail} | Recurring Tasks Count: {tasks.length}
             <button 
               onClick={refreshFromDatabase}
               className="ml-2 px-2 py-1 bg-blue-500 text-white rounded text-xs"
@@ -479,15 +548,14 @@ const TaskHomeUser = ({ theme }) => {
         )}
         */}
 
-        {/* Use TableDisplay component */}
-        <TableDisplay
+        {/* Use RecurringTaskTable component */}
+        <RecurringTaskTable
           currentTheme={currentTheme}
           sortedAndFilteredTasks={sortedAndFilteredTasks}
-          sortState={sortState}
-          handleDueDateClick={handleDueDateClick}
-          setSortState={setSortState}
+          toggleRecurringDone={toggleRecurringDone}
           animatingTaskId={animatingTaskId}
           toggleTaskCompletion={toggleTaskCompletion}
+          onSaveTask={saveEditedTask} // Pass the save function for table's internal edit modal
           openEditModal={openEditModal}
           openDeleteModal={openDeleteModal}
           openCommentsModal={openCommentsModal}
@@ -497,15 +565,15 @@ const TaskHomeUser = ({ theme }) => {
           getTaskAgeBadge={getTaskAgeBadge}
           getRowClass={getRowClass}
           showActiveOnly={showActiveOnly}
-          pageTitle={getPageTitle()}
+          pageTitle={`My Recurring 🔁 Tasks`} // User-specific title
         />
 
-        {/* Use TaskFiltersnStats component */}
-        <TaskFiltersnStats
+        {/* Use RecurringTaskFiltersnStats component */}
+        <RecurringTaskFiltersnStats
           currentTheme={currentTheme}
           showActiveOnly={showActiveOnly}
           setShowActiveOnly={setShowActiveOnly}
-          taskStats={taskStats}
+          tasks={tasks} // Pass the tasks array directly
         />
 
         {/* Modals - now using components from ModelOps.jsx */}
@@ -526,8 +594,8 @@ const TaskHomeUser = ({ theme }) => {
           currentTheme={currentTheme}
         />
 
-        {/* OneTimeTaskEditModal for user editing */}
-        <OneTimeTaskEditModal
+        {/* RecurringTaskEditModal for user editing */}
+        <RecurringTaskEditModal
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           onSave={saveEditedTask}
@@ -541,4 +609,4 @@ const TaskHomeUser = ({ theme }) => {
   );
 };
 
-export default TaskHomeUser;
+export default RecurringTaskUser;

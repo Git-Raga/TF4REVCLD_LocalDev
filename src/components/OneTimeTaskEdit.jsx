@@ -11,25 +11,25 @@ export const OneTimeTaskEditModal = ({
   isSaving,
   currentTheme,
 }) => {
-  // Case owner options based on your user details image
+  // UPDATED: Case owner options with email addresses from the database table
   const caseOwners = [
-    { initials: "SS", name: "Sushanth", id: "sushanth" },
-    { initials: "WAS", name: "Wahaj", id: "wahaj" },
-    { initials: "SPK", name: "Sashi", id: "sashi" },
-    { initials: "RS", name: "Rithik", id: "rithik" },
-    { initials: "PMR", name: "Prasanna", id: "prasanna" },
-    { initials: "MMR", name: "Matta", id: "matta" },
-    { initials: "HD", name: "Harshdeep", id: "harshdeep" },
-    { initials: "GG", name: "Geethika", id: "geethika" },
-    { initials: "FH", name: "Farbeena", id: "farbeena" },
-    { initials: "MR", name: "Manu", id: "manu" },
-    { initials: "CR", name: "Chaten", id: "chaten" },
-    { initials: "AC", name: "Astha", id: "astha" },
-    { initials: "ARS", name: "Angad", id: "angad" },
-    { initials: "RS", name: "Rashi", id: "rashi" },
-    { initials: "PD", name: "Pushkar", id: "pushkar" },
-    { initials: "NS", name: "Nishanth", id: "nishanth" },
-    { initials: "RGV", name: "Raghav", id: "raghav" }
+    { initials: "SS", name: "Sushanth", id: "sushanth", email: "sushant.singh@salesforce.com" },
+    { initials: "WAS", name: "Wahaj", id: "wahaj", email: "wshaik@salesforce.com" },
+    { initials: "SPK", name: "Sashi", id: "sashi", email: "skotni@salesforce.com" },
+    { initials: "RS", name: "Rithik", id: "rithik", email: "ritik.srivastav@salesforce.com" },
+    { initials: "PMR", name: "Prasanna", id: "prasanna", email: "prasannamadhava.rao@salesforce.com" },
+    { initials: "MMR", name: "Matta", id: "matta", email: "matta.reddy@salesforce.com" },
+    { initials: "HD", name: "Harshdeep", id: "harshdeep", email: "hdeep@salesforce.com" },
+    { initials: "GG", name: "Geethika", id: "geethika", email: "ggandrala@salesforce.com" },
+    { initials: "FH", name: "Farbeena", id: "farbeena", email: "farbeena.hussain@salesforce.com" },
+    { initials: "MR", name: "Manu", id: "manu", email: "mmanuramamurthy@salesforce.com" },
+    { initials: "CR", name: "Chaten", id: "chaten", email: "craghav@salesforce.com" },
+    { initials: "AC", name: "Astha", id: "astha", email: "astha.chaudhary@salesforce.com" },
+    { initials: "ARS", name: "Angad", id: "angad", email: "angad.rajpal@salesforce.com" },
+    { initials: "RS", name: "Rashi", id: "rashi", email: "rsaraswat@salesforce.com" },
+    { initials: "PD", name: "Pushkar", id: "pushkar", email: "pushkar.dwivedi@salesforce.com" },
+    { initials: "NS", name: "Nishanth", id: "nishanth", email: "nsagar@salesforce.com" },
+    { initials: "RGV", name: "Raghav", id: "raghav", email: "rkrishnamurthy1@salesforce.com" }
   ];
 
   if (!isOpen) return null;
@@ -42,12 +42,14 @@ export const OneTimeTaskEditModal = ({
     comments: editTask.comments || "",
     taskownerinitial: editTask.taskownerinitial || "",
     taskownername: editTask.taskownername || "",
+    taskowneremail: editTask.taskowneremail || "", // Added email field
   };
 
   const handleSave = () => {
     onSave(taskToEdit);
   };
 
+  // UPDATED: Handle owner change to update initials, name, and email
   const handleOwnerChange = (e) => {
     const selectedInitials = e.target.value;
     const selectedOwner = caseOwners.find(owner => owner.initials === selectedInitials);
@@ -55,7 +57,8 @@ export const OneTimeTaskEditModal = ({
     setEditTask({
       ...taskToEdit,
       taskownerinitial: selectedOwner?.initials || "",
-      taskownername: selectedOwner?.name || ""
+      taskownername: selectedOwner?.name || "",
+      taskowneremail: selectedOwner?.email || "" // UPDATED: Also update email
     });
   };
 
@@ -187,13 +190,23 @@ export const OneTimeTaskEditModal = ({
                 ))}
               </select>
               
-              {/* Show selected owner preview */}
+              {/* UPDATED: Show selected owner preview with email */}
               {taskToEdit.taskownerinitial && (
-                <div className="mt-2 text-sm flex items-center">
-                  <User size={16} className="mr-2 text-blue-500" />
-                  <span className={currentTheme.text}>
-                    Assigned to: <strong>{taskToEdit.taskownerinitial} - {taskToEdit.taskownername}</strong>
-                  </span>
+                <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-center text-sm">
+                    <User size={16} className="mr-2 text-blue-500" />
+                    <span className={currentTheme.text}>
+                      <strong>Assigned to:</strong>
+                    </span>
+                  </div>
+                  <div className="mt-1 ml-6 text-sm space-y-1">
+                    <div className={currentTheme.text}>
+                      <strong>Name:</strong> {taskToEdit.taskownerinitial} - {taskToEdit.taskownername}
+                    </div>
+                    <div className={`${currentTheme.text} text-xs opacity-80`}>
+                      <strong>Email:</strong> {taskToEdit.taskowneremail}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -219,6 +232,18 @@ export const OneTimeTaskEditModal = ({
                 placeholder="Enter any comments or notes about this task"
               />
             </div>
+
+            {/* UPDATED: Debug info section (can be removed in production) */}
+            {process.env.NODE_ENV === 'development' && taskToEdit.taskownerinitial && (
+              <div className="mt-4 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg text-xs">
+                <div className="font-semibold mb-2 text-gray-700 dark:text-gray-300">Debug Info:</div>
+                <div className="space-y-1 text-gray-600 dark:text-gray-400">
+                  <div><strong>Initials:</strong> {taskToEdit.taskownerinitial}</div>
+                  <div><strong>Name:</strong> {taskToEdit.taskownername}</div>
+                  <div><strong>Email:</strong> {taskToEdit.taskowneremail}</div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mt-6 flex justify-end space-x-3">
