@@ -1,4 +1,4 @@
-// RecurringTaskTable.jsx - Updated with Separated Weekly and Monthly Sections
+// RecurringTaskTable.jsx - Responsive Fixed Positioning
 import React, { useState, useEffect, useRef } from "react";
 import {
   Star,
@@ -105,111 +105,99 @@ const RecurringTaskTable = ({
     };
   };
 
-  // Enhanced Section Header Component
-  const SectionHeader = ({ frequency, tasks, sectionTitle }) => {
-    const pendingCount = tasks.filter(task => !task.recurringdone).length;
-    const completedCount = tasks.filter(task => task.recurringdone).length;
-    
-    const getFrequencyInfo = (freq) => {
-      switch (freq) {
-        case 'weekly':
-          return { 
-            symbol: 'W', 
-            bgColor: currentTheme.name === 'dark' 
-              ? 'bg-gradient-to-r from-gray-700 to-gray-800' 
-              : 'bg-gradient-to-r from-gray-600 to-gray-700', 
-            textColor: 'text-white',
-            borderColor: currentTheme.name === 'dark' ? 'border-l-gray-600' : 'border-l-gray-500'
-          };
-        case 'monthly':
-          return { 
-            symbol: 'M', 
-            bgColor: currentTheme.name === 'dark' 
-              ? 'bg-gradient-to-r from-slate-700 to-slate-800' 
-              : 'bg-gradient-to-r from-slate-600 to-slate-700', 
-            textColor: 'text-white',
-            borderColor: currentTheme.name === 'dark' ? 'border-l-slate-600' : 'border-l-slate-500'
-          };
-        default:
-          return { 
-            symbol: 'O', 
-            bgColor: 'bg-gradient-to-r from-gray-600 to-gray-700', 
-            textColor: 'text-white',
-            borderColor: 'border-l-gray-800'
-          };
-      }
-    };
+// Enhanced Section Header Component - FIXED VERSION
+const SectionHeader = ({ frequency, tasks, sectionTitle }) => {
+  const pendingCount = tasks.filter(task => !task.recurringdone).length;
+  const completedCount = tasks.filter(task => task.recurringdone).length;
+  
+  const getFrequencyInfo = (freq) => {
+    switch (freq) {
+      case 'weekly':
+        return { 
+          symbol: 'W', 
+          bgColor: 'bg-gradient-to-r from-gray-600 to-orange-600',
+          textColor: 'text-white',
+          borderColor: 'border-l-orange-500',
+          symbolBg: 'bg-gray-800'
+        };
+      case 'monthly':
+        return { 
+          symbol: 'M', 
+          bgColor: 'bg-gradient-to-r from-gray-600 to-green-700',
+          textColor: 'text-white',
+          borderColor: 'border-l-white',
+          symbolBg: 'bg-gray-800'
+        };
+      default:
+        return { 
+          symbol: 'O', 
+          bgColor: 'bg-gradient-to-r from-gray-600 to-orange-700', 
+          textColor: 'text-white',
+          borderColor: 'border-l-gray-500',
+          symbolBg: 'bg-gray-800'
+        };
+    }
+  };
 
-    const info = getFrequencyInfo(frequency);
+  const info = getFrequencyInfo(frequency);
 
-    return (
-      <div className={`${info.bgColor} ${info.textColor} px-8 py-4 border-l-8 ${info.borderColor} shadow-lg`}>
-        <div className="flex items-center justify-between">
-          {/* Left side - Symbol and Title */}
-          <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center shadow-md">
-              <span className="font-bold text-2xl text-white">{info.symbol}</span>
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold">{sectionTitle}</h2>
-            </div>
+  return (
+    <div className={`${info.bgColor} ${info.textColor} px-5 py-1 border-l-6 ${info.borderColor} shadow-lg`}>
+      <div className="flex items-center justify-center">
+        {/* Left side - Symbol and Title */}
+        <div className="flex items-center space-x-2">
+          {/* FIXED: Enhanced symbol container with better contrast */}
+          <div className={`w-12 h-10 ${info.symbolBg} rounded-xl flex items-center justify-center shadow-md border-2 border-white border-opacity-30`}>
+            <span className="font-black text-xl text-white drop-shadow-lg">{info.symbol}</span>
           </div>
-          
-          {/* Right side - Statistics */}
-          <div className="flex items-center space-x-6">
-            <div className="bg-white bg-opacity-20 px-4 py-2 rounded-full">
-              <span className="font-bold text-lg">{tasks.length}</span>
-              <span className="text-sm ml-1">Total</span>
-            </div>
-            <div className="bg-yellow-500 bg-opacity-90 px-4 py-2 rounded-full text-black">
-              <span className="font-bold text-lg">{pendingCount}</span>
-              <span className="text-sm ml-1">Pending</span>
-            </div>
-            <div className="bg-green-500 bg-opacity-90 px-4 py-2 rounded-full text-white">
-              <span className="font-bold text-lg">{completedCount}</span>
-              <span className="text-sm ml-1">Done</span>
-            </div>
+          <div>
+            <h2 className="text-xl font-bold drop-shadow-md">{sectionTitle}</h2>
           </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
   // Table Header Component
-  const TableHeader = ({ title }) => {
+  const TableHeader = ({ title, frequency }) => {
     const headerClass = currentTheme.name === "dark"
-      ? "bg-zinc-800 text-white border-b border-gray-600"
+      ? "bg-black text-white  border-b border-gray-600"
       : "bg-gray-200 text-gray-800 border-b border-gray-300";
 
     return (
       <thead>
         <tr className={headerClass}>
-          <th className="p-3 text-center whitespace-nowrap">
+          <th className="p-2 text-center whitespace-nowrap">
             <span>Frequency</span>
           </th>
-          <th className="p-3 text-center whitespace-nowrap">
-            <span>Due-Day</span>
-          </th>
-          <th className="p-3 text-center whitespace-nowrap">
-            <div className="flex items-center justify-center space-x-2">
-              <span>Due-Date 📆</span>
-            </div>
-          </th>
-          <th className="p-3 pl-10 text-left">
+          {frequency === "weekly" && (
+            <th className="p-2 text-center whitespace-nowrap">
+              <span>Due-Day</span>
+            </th>
+          )}
+          {frequency === "monthly" && (
+            <th className="p-2 text-center whitespace-nowrap">
+              <div className="flex items-center justify-center space-x-2">
+                <span>Due-Date 📆</span>
+              </div>
+            </th>
+          )}
+          <th className="p-2 pl-10 text-left">
             <span>{title} 📃</span>
           </th>
           <th className="p-2 text-center">
             <span>Notes</span>
           </th>
-          <th className="p-3 whitespace-nowrap">
+          <th className="p-2 whitespace-nowrap">
             <div className="flex items-center pl-5 justify-start space-x-3">
               <span>Assigned to 🙋</span>
             </div>
           </th>
-          <th className="p-3 text-center whitespace-nowrap">
+          <th className="p-2 text-center whitespace-nowrap">
             <span>Status</span>
           </th>
-          <th className="p-3 text-right whitespace-nowrap">
+          <th className="p-2 text-right whitespace-nowrap">
             <span>Actions ⚙️</span>
           </th>
         </tr>
@@ -273,7 +261,7 @@ const RecurringTaskTable = ({
   };
 
   // Render task row component
-  const renderTaskRow = (task, index) => {
+  const renderTaskRow = (task, index, frequency) => {
     const isAnimating = animatingTaskId === task.$id;
 
     return (
@@ -290,42 +278,44 @@ const RecurringTaskTable = ({
           </div>
         </td>
         
-        {/* Weekday */}
-        <td className="p-2 text-center">
-          <div className="flex justify-center">
-            {task.recurringfreq === "weekly" && task.recurringday ? (
-              <div className="bg-black text-white px-3 py-1 rounded text-xs inline-block text-center w-20">
-                {task.recurringday.charAt(0).toUpperCase() + task.recurringday.slice(1)}
-              </div>
-            ) : (
-              <div className="text-teal-700 px-3 py-1 rounded text-xs inline-block text-center w-20">
-                ---
-              </div>
-            )}
-          </div>
-        </td>
+        {/* Weekday - Only for weekly */}
+        {frequency === "weekly" && (
+          <td className="p-2 text-center">
+            <div className="flex justify-center">
+              {task.recurringfreq === "weekly" && task.recurringday ? (
+                <div className="bg-black text-white px-3 py-1 rounded text-xs inline-block text-center w-20">
+                  {task.recurringday.charAt(0).toUpperCase() + task.recurringday.slice(1)}
+                </div>
+              ) : (
+                <div className="text-teal-700 px-3 py-1 rounded text-xs inline-block text-center w-20">
+                  ---
+                </div>
+              )}
+            </div>
+          </td>
+        )}
         
-        {/* Due on */}
-        <td className="p-2 text-center">
-          <div className="flex justify-center">
-            {task.recurringfreq === "monthly" && task.recurringday ? (
-              <div className="bg-red-500 text-xs text-white px-3 py-1 rounded text-sm inline-block text-center w-20">
-                {getOrdinalSuffix(task.recurringday)}
-              </div>
-            ) : task.recurringfreq === "weekly" ? (
-              <div className="w-20"></div>
-            ) : task.taskduedate ? (
-              getDueDateBadge(task.taskduedate)
-            ) : (
-              <div className="w-20"></div>
-            )}
-          </div>
-        </td>
+        {/* Due on - Only for monthly */}
+        {frequency === "monthly" && (
+          <td className="p-2 text-center">
+            <div className="flex justify-center">
+              {task.recurringfreq === "monthly" && task.recurringday ? (
+                <div className="bg-red-500 text-xs text-white px-3 py-1 rounded text-sm inline-block text-center w-20">
+                  {getOrdinalSuffix(task.recurringday)}
+                </div>
+              ) : task.taskduedate ? (
+                getDueDateBadge(task.taskduedate)
+              ) : (
+                <div className="w-20"></div>
+              )}
+            </div>
+          </td>
+        )}
         
         {/* Task details */}
         <td className="p-2 pl-10 truncate">
           <p
-            className={`${currentTheme.text} font-bold transition-all duration-300 ${
+            className={`${currentTheme.text}  transition-all duration-300 ${
               task.recurringdone ? "line-through opacity-60 text-gray-500" : ""
             } ${task.taskcompleted ? "line-through opacity-30" : ""}`}
           >
@@ -414,14 +404,81 @@ const RecurringTaskTable = ({
     );
   };
 
+  // Stats Component
+  const StatsPanel = ({ weekly, monthly }) => {
+    const weeklyTotal = weekly.length;
+    const weeklyOpen = weekly.filter(task => !task.recurringdone).length;
+    const weeklyClosed = weekly.filter(task => task.recurringdone).length;
+
+    const monthlyTotal = monthly.length;
+    const monthlyOpen = monthly.filter(task => !task.recurringdone).length;
+    const monthlyClosed = monthly.filter(task => task.recurringdone).length;
+
+    const panelBg = currentTheme.name === "dark" ? "bg-gray-900" : "bg-white";
+    const textColor = currentTheme.name === "dark" ? "text-white" : "text-gray-800";
+    const totalBg = currentTheme.name === "dark" ? "bg-gray-700" : "bg-gray-200";
+    const dividerColor = currentTheme.name === "dark" ? "bg-gray-600" : "bg-gray-300";
+
+    return (
+      <div className={`fixed bottom-4 left-40 lg:left-[225px] right-4 lg:right-8 z-30 ${panelBg} border border-gray-700 rounded-lg shadow-xl`}>
+        <div className="flex items-center justify-between py-3 px-6">
+          {/* Weekly Stats - Left Side */}
+          <div className="flex items-center space-x-4">
+            <div className="w-10 h-10 bg-orange-600 rounded-xl flex items-center justify-center">
+              <span className="font-bold text-white">W</span>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className={`${totalBg} px-3 py-1 rounded-full`}>
+                <span className={`font-bold text-lg ${textColor}`}>{weeklyTotal}</span>
+                <span className={`text-sm ml-1 ${textColor}`}>Total</span>
+              </div>
+              <div className="bg-yellow-500 px-3 py-1 rounded-full text-black">
+                <span className="font-bold text-lg">{weeklyOpen}</span>
+                <span className="text-sm ml-1">Open</span>
+              </div>
+              <div className="bg-green-500 px-3 py-1 rounded-full text-black">
+                <span className="font-bold text-lg">{weeklyClosed}</span>
+                <span className="text-sm ml-1">Closed</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <div className={`h-8 w-px ${dividerColor}`}></div>
+
+          {/* Monthly Stats - Right Side */}
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
+              <div className={`${totalBg} px-3 py-1 rounded-full`}>
+                <span className={`font-bold text-lg ${textColor}`}>{monthlyTotal}</span>
+                <span className={`text-sm ml-1 ${textColor}`}>Total</span>
+              </div>
+              <div className="bg-yellow-500 px-3 py-1 rounded-full text-black">
+                <span className="font-bold text-lg">{monthlyOpen}</span>
+                <span className="text-sm ml-1">Open</span>
+              </div>
+              <div className="bg-green-500 px-3 py-1 rounded-full text-black">
+                <span className="font-bold text-lg">{monthlyClosed}</span>
+                <span className="text-sm ml-1">Closed</span>
+              </div>
+            </div>
+            <div className="w-10 h-10 bg-green-700 rounded-xl flex items-center justify-center">
+              <span className="font-bold text-white">M</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // Separate tasks by frequency
   const { weekly, monthly } = separateTasksByFrequency(sortedAndFilteredTasks);
 
   return (
     <div className="space-y-8">
-      {/* Weekly Tasks Section */}
+      {/* Weekly Tasks Section - FIXED HEIGHT with scrolling */}
       {weekly.length > 0 && (
-        <div className="overflow-hidden rounded-lg shadow-xl border border-gray-700">
+        <div className="fixed top-24 left-4 lg:left-[225px] right-4 lg:right-8 z-40 h-[44vh] overflow-hidden rounded-lg shadow-xl border border-gray-700  dark:bg-gray-900">
           {/* Section Header at the very top */}
           <SectionHeader 
             frequency="weekly" 
@@ -432,7 +489,6 @@ const RecurringTaskTable = ({
           {/* Table Header Below Section Header */}
           <table className={`w-full table-fixed ${currentTheme.name === "dark" ? "bg-gray-900" : "bg-white"}`}>
             <colgroup>
-              <col className="w-12" />
               <col className="w-14" />
               <col className="w-14" />
               <col className="w-[40%]" />
@@ -441,13 +497,12 @@ const RecurringTaskTable = ({
               <col className="w-20" />
               <col className="w-28" />
             </colgroup>
-            <TableHeader title="Weekly Tasks" />
+            <TableHeader title="Weekly Tasks" frequency="weekly" />
           </table>
 
-          <div className="overflow-y-auto" style={{ maxHeight: "calc(50vh - 100px)" }}>
+          <div className="overflow-y-auto h-[calc(45vh-120px)]">
             <table className={`w-full table-fixed ${currentTheme.name === "dark" ? "bg-gray-900" : "bg-white"}`}>
               <colgroup>
-                <col className="w-12" />
                 <col className="w-14" />
                 <col className="w-14" />
                 <col className="w-[40%]" />
@@ -457,16 +512,17 @@ const RecurringTaskTable = ({
                 <col className="w-28" />
               </colgroup>
               <tbody>
-                {weekly.map((task, index) => renderTaskRow(task, index))}
+                {weekly.map((task, index) => renderTaskRow(task, index, "weekly"))}
               </tbody>
             </table>
           </div>
         </div>
       )}
+ 
 
-      {/* Monthly Tasks Section */}
+      {/* Monthly Tasks Section - FIXED HEIGHT with scrolling */}
       {monthly.length > 0 && (
-        <div className="overflow-hidden rounded-lg shadow-xl border border-gray-700">
+        <div className="fixed top-[calc(25px+45vh+4rem)] left-4 lg:left-[225px] right-4 lg:right-8 z-40 h-[35vh] overflow-hidden rounded-lg shadow-xl border border-gray-700 dark:bg-gray-900">
           {/* Section Header at the very top */}
           <SectionHeader 
             frequency="monthly" 
@@ -477,7 +533,6 @@ const RecurringTaskTable = ({
           {/* Table Header Below Section Header */}
           <table className={`w-full table-fixed ${currentTheme.name === "dark" ? "bg-gray-900" : "bg-white"}`}>
             <colgroup>
-              <col className="w-12" />
               <col className="w-14" />
               <col className="w-14" />
               <col className="w-[40%]" />
@@ -486,13 +541,12 @@ const RecurringTaskTable = ({
               <col className="w-20" />
               <col className="w-28" />
             </colgroup>
-            <TableHeader title="Monthly Tasks" />
+            <TableHeader title="Monthly Tasks" frequency="monthly" />
           </table>
 
-          <div className="overflow-y-auto" style={{ maxHeight: "calc(50vh - 100px)" }}>
+          <div className="overflow-y-auto h-[calc(35vh-120px)]">
             <table className={`w-full table-fixed ${currentTheme.name === "dark" ? "bg-gray-900" : "bg-white"}`}>
               <colgroup>
-                <col className="w-12" />
                 <col className="w-14" />
                 <col className="w-14" />
                 <col className="w-[40%]" />
@@ -502,14 +556,19 @@ const RecurringTaskTable = ({
                 <col className="w-28" />
               </colgroup>
               <tbody>
-                {monthly.map((task, index) => renderTaskRow(task, index))}
+                {monthly.map((task, index) => renderTaskRow(task, index, "monthly"))}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      {/* No Tasks Message */}
+      {/* Stats Panel - Positioned at the very bottom */}
+      <div className="fixed bottom-4 left-4 lg:left-[225px] right-4 lg:right-8 z-30">
+        <StatsPanel weekly={weekly} monthly={monthly} />
+      </div>
+
+      {/* No Tasks Message - Only show when both sections are empty */}
       {weekly.length === 0 && monthly.length === 0 && (
         <div className={`text-center py-20 ${currentTheme.text}`}>
           <div className="text-6xl mb-4">📅</div>

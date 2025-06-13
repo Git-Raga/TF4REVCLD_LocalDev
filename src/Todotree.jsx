@@ -6,7 +6,10 @@
 
 
  
- 
+  TODO // Fix the recurring task banner
+  TODO // to load form DB - on the refresh
+  TODO // no recurring task  - text to update - tasks will appear once Raghav assigns it
+
  TODO // Only Raghav can assign task -New task to be disabled for others
  
  
