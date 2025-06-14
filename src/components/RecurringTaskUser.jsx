@@ -568,14 +568,7 @@ const RecurringTaskUser = ({ theme }) => {
           pageTitle={`My Recurring 🔁 Tasks`} // User-specific title
         />
 
-        {/* Use RecurringTaskFiltersnStats component */}
-        <RecurringTaskFiltersnStats
-          currentTheme={currentTheme}
-          showActiveOnly={showActiveOnly}
-          setShowActiveOnly={setShowActiveOnly}
-          tasks={tasks} // Pass the tasks array directly
-        />
-
+        
         {/* Modals - now using components from ModelOps.jsx */}
         <DeleteConfirmationModal
           isOpen={isDeleteModalOpen}

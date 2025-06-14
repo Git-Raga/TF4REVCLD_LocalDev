@@ -1,4 +1,4 @@
-// TaskCacheService.js - Local Storage Caching System for Tasks
+// TaskCacheService.js - Local Storage Caching System for Tasks with Page Reload Detection
 import { databases, DATABASE_ID, COLLECTIONS } from "../appwrite/config";
 import { Query } from "appwrite";
 
@@ -9,14 +9,61 @@ class TaskCacheService {
       RECURRING_TASKS: 'taskforce_recurring_tasks',
       ONE_TIME_LAST_FETCH: 'taskforce_onetime_last_fetch',
       RECURRING_LAST_FETCH: 'taskforce_recurring_last_fetch',
-      CACHE_DIRTY_FLAG: 'taskforce_cache_dirty'
-  };
+      CACHE_DIRTY_FLAG: 'taskforce_cache_dirty',
+      SESSION_ID: 'taskforce_session_id', // NEW: Track browser session
+      PAGE_LOAD_FLAG: 'taskforce_page_loaded' // NEW: Track page load status
+    };
     
     // Cache expiry time (optional - 24 hours)
     this.CACHE_EXPIRY = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    
+    // NEW: Initialize session tracking
+    this.initializeSessionTracking();
   }
 
-  // Check if cache is dirty (needs refresh due to recent DB operations)
+  // NEW: Initialize session tracking to detect page reloads
+  initializeSessionTracking() {
+    const currentSessionId = this.generateSessionId();
+    const storedSessionId = sessionStorage.getItem(this.CACHE_KEYS.SESSION_ID);
+    const pageLoadFlag = sessionStorage.getItem(this.CACHE_KEYS.PAGE_LOAD_FLAG);
+    
+    // If session ID doesn't exist or is different, it means page was reloaded/new session
+    if (!storedSessionId || storedSessionId !== currentSessionId || !pageLoadFlag) {
+      console.log('🔄 Page reload detected - marking cache for refresh');
+      this.markCacheForRefreshOnReload();
+    }
+    
+    // Set current session ID and page load flag
+    sessionStorage.setItem(this.CACHE_KEYS.SESSION_ID, currentSessionId);
+    sessionStorage.setItem(this.CACHE_KEYS.PAGE_LOAD_FLAG, 'true');
+  }
+
+  // NEW: Generate a unique session ID
+  generateSessionId() {
+    return Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+  }
+
+  // NEW: Mark cache for refresh when page is reloaded
+  markCacheForRefreshOnReload() {
+    // Mark both task types as dirty to force refresh from database
+    this.markCacheDirty('onetime');
+    this.markCacheDirty('recurring');
+    
+    // Optional: Clear existing cache to force fresh fetch
+    localStorage.removeItem(this.CACHE_KEYS.ONE_TIME_TASKS);
+    localStorage.removeItem(this.CACHE_KEYS.RECURRING_TASKS);
+    
+    console.log('🗑️ Cache marked for refresh due to page reload');
+  }
+
+  // NEW: Check if this is a fresh page load (for debugging/logging)
+  isPageReload() {
+    const pageLoadFlag = sessionStorage.getItem(this.CACHE_KEYS.PAGE_LOAD_FLAG);
+    const storedSessionId = sessionStorage.getItem(this.CACHE_KEYS.SESSION_ID);
+    return !pageLoadFlag || !storedSessionId;
+  }
+
+  // Check if cache is dirty (needs refresh due to recent DB operations or page reload)
   isCacheDirty(taskType) {
     const dirtyFlag = localStorage.getItem(this.CACHE_KEYS.CACHE_DIRTY_FLAG);
     if (!dirtyFlag) return false;
@@ -32,6 +79,8 @@ class TaskCacheService {
     
     dirtyData[taskType] = true;
     localStorage.setItem(this.CACHE_KEYS.CACHE_DIRTY_FLAG, JSON.stringify(dirtyData));
+    
+    console.log(`🚩 Marked ${taskType} cache as dirty`);
   }
 
   // Clear dirty flag for a specific task type
@@ -42,6 +91,8 @@ class TaskCacheService {
     const dirtyData = JSON.parse(existingDirtyFlag);
     delete dirtyData[taskType];
     localStorage.setItem(this.CACHE_KEYS.CACHE_DIRTY_FLAG, JSON.stringify(dirtyData));
+    
+    console.log(`✅ Cleared dirty flag for ${taskType} cache`);
   }
 
   // Check if cache is expired (optional feature)
@@ -51,7 +102,13 @@ class TaskCacheService {
     
     const lastFetchTime = parseInt(lastFetch);
     const now = Date.now();
-    return (now - lastFetchTime) > this.CACHE_EXPIRY;
+    const isExpired = (now - lastFetchTime) > this.CACHE_EXPIRY;
+    
+    if (isExpired) {
+      console.log(`⏰ Cache expired for ${lastFetchKey}`);
+    }
+    
+    return isExpired;
   }
 
   // Save tasks to local storage
@@ -75,7 +132,10 @@ class TaskCacheService {
     
     try {
       const cachedData = localStorage.getItem(cacheKey);
-      if (!cachedData) return null;
+      if (!cachedData) {
+        console.log(`📦 No cached ${taskType} tasks found`);
+        return null;
+      }
       
       const tasks = JSON.parse(cachedData);
       console.log(`📦 Retrieved ${taskType} tasks from cache (${tasks.length} tasks)`);
@@ -128,9 +188,14 @@ class TaskCacheService {
     }
   }
 
-  // Main method to get tasks (checks cache first, then database if needed)
+  // UPDATED: Main method to get tasks (checks cache first, then database if needed)
   async getTasks(taskType, forceRefresh = false) {
     const lastFetchKey = taskType === 'onetime' ? this.CACHE_KEYS.ONE_TIME_LAST_FETCH : this.CACHE_KEYS.RECURRING_LAST_FETCH;
+    
+    // NEW: Log if this is due to page reload
+    if (this.isPageReload()) {
+      console.log(`🔄 Getting ${taskType} tasks after page reload - will refresh from database`);
+    }
     
     // Check if we should use cache
     const shouldUseCache = !forceRefresh && 
@@ -140,11 +205,13 @@ class TaskCacheService {
     if (shouldUseCache) {
       const cachedTasks = this.getCachedTasks(taskType);
       if (cachedTasks) {
+        console.log(`📱 Using cached ${taskType} tasks`);
         return cachedTasks;
       }
     }
 
-    // Fetch from database
+    // Fetch from database (either forced, dirty, expired, or no cache)
+    console.log(`🌐 Fetching fresh ${taskType} tasks from database...`);
     let tasks;
     if (taskType === 'onetime') {
       tasks = await this.fetchOneTimeTasks();
@@ -161,7 +228,10 @@ class TaskCacheService {
   // Update a single task in cache after database operation
   updateTaskInCache(taskType, updatedTask) {
     const cachedTasks = this.getCachedTasks(taskType);
-    if (!cachedTasks) return;
+    if (!cachedTasks) {
+      console.log(`⚠️ No cached ${taskType} tasks found for update`);
+      return;
+    }
 
     const updatedTasks = cachedTasks.map(task => 
       task.$id === updatedTask.$id ? updatedTask : task
@@ -183,7 +253,10 @@ class TaskCacheService {
   // Remove a task from cache after database operation
   removeTaskFromCache(taskType, taskId) {
     const cachedTasks = this.getCachedTasks(taskType);
-    if (!cachedTasks) return;
+    if (!cachedTasks) {
+      console.log(`⚠️ No cached ${taskType} tasks found for removal`);
+      return;
+    }
 
     const updatedTasks = cachedTasks.filter(task => task.$id !== taskId);
     
@@ -191,26 +264,54 @@ class TaskCacheService {
     console.log(`🗑️ Removed task ${taskId} from ${taskType} cache`);
   }
 
+  // NEW: Force refresh cache from database (useful for manual refresh)
+  async forceRefreshCache(taskType = 'both') {
+    console.log(`🔄 Force refreshing ${taskType} cache...`);
+    
+    if (taskType === 'both' || taskType === 'onetime') {
+      await this.getTasks('onetime', true);
+    }
+    
+    if (taskType === 'both' || taskType === 'recurring') {
+      await this.getTasks('recurring', true);
+    }
+    
+    console.log(`✅ Force refresh completed for ${taskType}`);
+  }
+
   // Clear all cache (useful for logout or cache reset)
   clearAllCache() {
+    // Clear localStorage cache
     Object.values(this.CACHE_KEYS).forEach(key => {
-      localStorage.removeItem(key);
+      if (key !== this.CACHE_KEYS.SESSION_ID && key !== this.CACHE_KEYS.PAGE_LOAD_FLAG) {
+        localStorage.removeItem(key);
+      }
     });
+    
+    // Clear sessionStorage tracking
+    sessionStorage.removeItem(this.CACHE_KEYS.SESSION_ID);
+    sessionStorage.removeItem(this.CACHE_KEYS.PAGE_LOAD_FLAG);
+    
     console.log('🧹 All task cache cleared');
   }
 
-  // Get cache status for debugging
+  // UPDATED: Get cache status for debugging
   getCacheStatus() {
     const oneTimeCached = !!localStorage.getItem(this.CACHE_KEYS.ONE_TIME_TASKS);
     const recurringCached = !!localStorage.getItem(this.CACHE_KEYS.RECURRING_TASKS);
     const dirtyFlags = JSON.parse(localStorage.getItem(this.CACHE_KEYS.CACHE_DIRTY_FLAG) || '{}');
+    const sessionId = sessionStorage.getItem(this.CACHE_KEYS.SESSION_ID);
+    const pageLoadFlag = sessionStorage.getItem(this.CACHE_KEYS.PAGE_LOAD_FLAG);
     
     return {
       oneTimeCached,
       recurringCached,
       dirtyFlags,
       oneTimeLastFetch: localStorage.getItem(this.CACHE_KEYS.ONE_TIME_LAST_FETCH),
-      recurringLastFetch: localStorage.getItem(this.CACHE_KEYS.RECURRING_LAST_FETCH)
+      recurringLastFetch: localStorage.getItem(this.CACHE_KEYS.RECURRING_LAST_FETCH),
+      sessionId, // NEW
+      pageLoadFlag, // NEW
+      isPageReload: this.isPageReload() // NEW
     };
   }
 }

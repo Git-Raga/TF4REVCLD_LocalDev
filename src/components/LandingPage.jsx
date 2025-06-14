@@ -360,14 +360,14 @@ const renderHomeContent = () => {
   }
 };
 
-// UPDATED: Role-based rendering for recurring tasks
+// UPDATED: Role-based rendering for recurring tasks - NOW WITH sidebarCollapsed prop
 const renderRecurringContent = () => {
   // Only SuperAdmin sees all recurring tasks
   if (userRole === 'SuperAdmin') {
-    return <RecurringTask theme={theme} />; // SuperAdmin sees all recurring tasks
+    return <RecurringTask theme={theme} sidebarCollapsed={sidebarCollapsed} />; // FIXED: Pass sidebarCollapsed prop
   } else {
     // Admin and User both see only their assigned recurring tasks
-    return <RecurringTaskUser theme={theme} />;
+    return <RecurringTaskUser theme={theme} sidebarCollapsed={sidebarCollapsed} />; // FIXED: Pass sidebarCollapsed prop
   }
 };
 
@@ -431,49 +431,48 @@ const renderRecurringContent = () => {
   const handleLogout = useCallback(() => {
     setActiveNavItem('Logout');
   }, []);
-
-  // UPDATED: Render the appropriate content based on the active nav item
-  const renderContent = () => {
-    switch (activeNavItem) {
-      case 'Home':
-        return renderHomeContent(); 
-      case 'New Task':
-        return <NewTask theme={theme} />;
-      case 'Task Flow':
-        return <TaskFlowContent theme={theme} />;
-      case 'Dashboard':
-        return <DashboardContent theme={theme} />;
-      case 'Perfect ⭐':
-        return <PerfectContent theme={theme} />;
-      case 'Settings':
-        return <SettingsContent theme={theme} />;
-      case 'Change Password':
-        return <PasswordContent theme={theme} />;
-      case 'Tech Support':
-        return <SupportContent theme={theme} />;
-        case 'Logout':
-          return (
-            <LogoutContent 
-              theme={theme} 
-              onConfirm={() => {
-                // Clear user authentication data
-                localStorage.removeItem('user');
-                // Navigate to login page
-                navigate('/login');
-              }}
-              onCancel={() => {
-                // Return to home page
-                setActiveNavItem('Home');
-              }}
-            />
-          );
-          
-          case 'reoccur':
-            return renderRecurringContent(); // NEW: Role-based recurring tasks
-          default:
-            return <HomeContent theme={theme} />;
-        }
-  };
+// UPDATED: Render the appropriate content based on the active nav item
+const renderContent = () => {
+  switch (activeNavItem) {
+    case 'Home':
+      return renderHomeContent(); 
+    case 'New Task':
+      return <NewTask theme={theme} />;
+    case 'Task Flow':
+      return <TaskFlowContent theme={theme} />;
+    case 'Dashboard':
+      return <DashboardContent theme={theme} />;
+    case 'Perfect ⭐':
+      return <PerfectContent theme={theme} />;
+    case 'Settings':
+      return <SettingsContent theme={theme} />;
+    case 'Change Password':
+      return <PasswordContent theme={theme} />;
+    case 'Tech Support':
+      return <SupportContent theme={theme} />;
+    case 'Logout':
+      return (
+        <LogoutContent 
+          theme={theme} 
+          onConfirm={() => {
+            // Clear user authentication data
+            localStorage.removeItem('user');
+            // Navigate to login page
+            navigate('/login');
+          }}
+          onCancel={() => {
+            // Return to home page
+            setActiveNavItem('Home');
+          }}
+        />
+      );
+      
+    case 'reoccur':
+      return renderRecurringContent(); // FIXED: Now passes sidebarCollapsed prop correctly
+    default:
+      return <HomeContent theme={theme} />;
+  }
+};
 
   return (
     <div className={`flex h-screen ${currentTheme.background}`}>

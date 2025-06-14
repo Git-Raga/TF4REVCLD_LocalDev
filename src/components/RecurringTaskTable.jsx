@@ -1,4 +1,4 @@
-// RecurringTaskTable.jsx - Responsive Fixed Positioning
+// RecurringTaskTable.jsx - Fixed Responsive Positioning
 import React, { useState, useEffect, useRef } from "react";
 import {
   Star,
@@ -32,6 +32,7 @@ const RecurringTaskTable = ({
   getRowClass,
   showActiveOnly,
   pageTitle = "Task Details",
+  sidebarCollapsed = false, // ADD THIS LINE
 }) => {
   // Add state for modals
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -162,7 +163,7 @@ const SectionHeader = ({ frequency, tasks, sectionTitle }) => {
   // Table Header Component
   const TableHeader = ({ title, frequency }) => {
     const headerClass = currentTheme.name === "dark"
-      ? "bg-black text-white  border-b border-gray-600"
+      ? "bg-black text-white border-b border-gray-600"
       : "bg-gray-200 text-gray-800 border-b border-gray-300";
 
     return (
@@ -315,7 +316,7 @@ const SectionHeader = ({ frequency, tasks, sectionTitle }) => {
         {/* Task details */}
         <td className="p-2 pl-10 truncate">
           <p
-            className={`${currentTheme.text}  transition-all duration-300 ${
+            className={`${currentTheme.text} transition-all duration-300 ${
               task.recurringdone ? "line-through opacity-60 text-gray-500" : ""
             } ${task.taskcompleted ? "line-through opacity-30" : ""}`}
           >
@@ -420,7 +421,7 @@ const SectionHeader = ({ frequency, tasks, sectionTitle }) => {
     const dividerColor = currentTheme.name === "dark" ? "bg-gray-600" : "bg-gray-300";
 
     return (
-      <div className={`fixed bottom-4 left-40 lg:left-[225px] right-4 lg:right-8 z-30 ${panelBg} border border-gray-700 rounded-lg shadow-xl`}>
+      <div className={`${panelBg} border border-gray-700 rounded-lg shadow-xl`}>
         <div className="flex items-center justify-between py-3 px-6">
           {/* Weekly Stats - Left Side */}
           <div className="flex items-center space-x-4">
@@ -476,9 +477,13 @@ const SectionHeader = ({ frequency, tasks, sectionTitle }) => {
 
   return (
     <div className="space-y-8">
-      {/* Weekly Tasks Section - FIXED HEIGHT with scrolling */}
+      {/* Weekly Tasks Section - FIXED RESPONSIVE POSITIONING */}
       {weekly.length > 0 && (
-        <div className="fixed top-24 left-4 lg:left-[225px] right-4 lg:right-8 z-40 h-[44vh] overflow-hidden rounded-lg shadow-xl border border-gray-700  dark:bg-gray-900">
+        <div className={`fixed top-24 z-40 h-[44vh] overflow-hidden rounded-lg shadow-xl border border-gray-700   dark:bg-gray-900 transition-all duration-300 ease-in-out ${
+          sidebarCollapsed 
+            ? 'left-4 md:left-[100px] lg:left-[120px] right-4' 
+            : 'left-4 md:left-[200px] lg:left-[240px] right-4'
+        }`}>
           {/* Section Header at the very top */}
           <SectionHeader 
             frequency="weekly" 
@@ -520,9 +525,13 @@ const SectionHeader = ({ frequency, tasks, sectionTitle }) => {
       )}
  
 
-      {/* Monthly Tasks Section - FIXED HEIGHT with scrolling */}
+      {/* Monthly Tasks Section - FIXED RESPONSIVE POSITIONING */}
       {monthly.length > 0 && (
-        <div className="fixed top-[calc(25px+45vh+4rem)] left-4 lg:left-[225px] right-4 lg:right-8 z-40 h-[35vh] overflow-hidden rounded-lg shadow-xl border border-gray-700 dark:bg-gray-900">
+        <div className={`fixed top-[calc(25px+45vh+4rem)] z-40 h-[35vh] overflow-hidden rounded-lg shadow-xl border border-gray-700   dark:bg-gray-900 transition-all duration-300 ease-in-out ${
+          sidebarCollapsed 
+            ? 'left-4 md:left-[100px] lg:left-[120px] right-4' 
+            : 'left-4 md:left-[200px] lg:left-[240px] right-4'
+        }`}>
           {/* Section Header at the very top */}
           <SectionHeader 
             frequency="monthly" 
@@ -563,8 +572,12 @@ const SectionHeader = ({ frequency, tasks, sectionTitle }) => {
         </div>
       )}
 
-      {/* Stats Panel - Positioned at the very bottom */}
-      <div className="fixed bottom-4 left-4 lg:left-[225px] right-4 lg:right-8 z-30">
+      {/* Stats Panel - FIXED RESPONSIVE POSITIONING */}
+      <div className={`fixed bottom-4 z-30 transition-all duration-300 ease-in-out ${
+        sidebarCollapsed 
+          ? 'left-4 md:left-[100px] lg:left-[120px] right-4' 
+          : 'left-4 md:left-[200px] lg:left-[240px] right-4'
+      }`}>
         <StatsPanel weekly={weekly} monthly={monthly} />
       </div>
 
@@ -573,7 +586,7 @@ const SectionHeader = ({ frequency, tasks, sectionTitle }) => {
         <div className={`text-center py-20 ${currentTheme.text}`}>
           <div className="text-6xl mb-4">📅</div>
           <h3 className="text-2xl font-bold mb-2">No Recurring Tasks Found</h3>
-          <p className="text-gray-500">Create some recurring tasks to see them here!</p>
+          <p className="text-gray-500">Ask Raghav to get some tasks assigned to you</p>
         </div>
       )}
 

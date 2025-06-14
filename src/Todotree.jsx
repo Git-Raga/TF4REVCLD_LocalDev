@@ -5,12 +5,10 @@
  
 
 
- 
-  TODO // Fix the recurring task banner
-  TODO // to load form DB - on the refresh
-  TODO // no recurring task  - text to update - tasks will appear once Raghav assigns it
 
- TODO // Only Raghav can assign task -New task to be disabled for others
+
+
+TODO // Only Raghav can assign task -New task to be disabled for others
  
  
 
@@ -18,7 +16,7 @@
  TODO // Logic to Done to Complete section 
  
  
- 
+TODO//  change password - shoudl be inside settings and to be removed from dropdown menu
  
 TODO // BUlk task assignment for all managers and all SL's
 

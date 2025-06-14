@@ -1,3 +1,4 @@
+// RecurringTask.jsx - Updated to pass sidebarCollapsed prop
 import React, { useState, useEffect } from "react";
 import { databases, DATABASE_ID, COLLECTIONS } from "../appwrite/config";
 import { Query } from "appwrite";
@@ -9,9 +10,9 @@ import RecurringTaskFiltersnStats from "./RecurringTaskFiltersnStats";
 import { DeleteConfirmationModal, CommentsModal } from "./ModelOps";
 import { RecurringTaskEditModal } from "./RecurringTaskEdit";
 import RecurringTaskTable from './RecurringTaskTable';
-import taskCacheService from "./TaskCacheService"; // Import cache service
+import taskCacheService from "./TaskCacheService";
 
-const RecurringTask = () => {
+const RecurringTask = ({ sidebarCollapsed = false }) => { // NEW: Accept sidebarCollapsed prop
   const { currentTheme } = useTheme();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +20,7 @@ const RecurringTask = () => {
   const [animatingTaskId, setAnimatingTaskId] = useState(null);
   const [showActiveOnly, setShowActiveOnly] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [sortState, setSortState] = useState("default"); // 'default', 'asc', or 'desc'
+  const [sortState, setSortState] = useState("default");
   
   // Modal states
   const [isCommentsModalOpen, setIsCommentsModalOpen] = useState(false);
@@ -501,7 +502,7 @@ const RecurringTask = () => {
       <div className="relative max-w-full mx-auto">
         {/* Debug info removed for cleaner UI */}
 
-        {/* Replace TableDisplay with RecurringTaskTable */}
+        {/* Replace TableDisplay with RecurringTaskTable - UPDATED: Pass sidebarCollapsed prop */}
         <RecurringTaskTable
           currentTheme={currentTheme}
           sortedAndFilteredTasks={sortedAndFilteredTasks}
@@ -520,15 +521,10 @@ const RecurringTask = () => {
           getRowClass={getRowClass}
           showActiveOnly={showActiveOnly}
           pageTitle="Recurring 🔁 Tasks Details"
+          sidebarCollapsed={sidebarCollapsed} // NEW: Pass the sidebarCollapsed prop
         />
 
-        {/* Use RecurringTaskFiltersnStats component */}
-        <RecurringTaskFiltersnStats
-          currentTheme={currentTheme}
-          showActiveOnly={showActiveOnly}
-          setShowActiveOnly={setShowActiveOnly}
-          tasks={tasks} // Pass the tasks array directly
-        />
+      
 
         {/* Modals - now using components from ModelOps.jsx */}
         <DeleteConfirmationModal
