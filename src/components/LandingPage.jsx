@@ -23,7 +23,7 @@ import {
   ChevronRight,
   CalendarSync,
   Menu,
-  CheckCheck 
+  CheckCheck,Search
 } from 'lucide-react';
 import FontConfig from './FontConfig';
 import { useNavigate } from 'react-router-dom';
@@ -132,27 +132,49 @@ const UserAvatar = ({ name, initials }) => {
 };
 
 // NavItem component
-const NavItem = ({ icon, text, active, onClick, theme, isCollapsed }) => {
-  // Get the color based on active state
-  const textColorClass = active ? theme.activeNavItemText : theme.navItemText;
+// First, update the NavItem component to handle disabled state
+const NavItem = ({ icon, text, active, onClick, theme, isCollapsed, disabled = false }) => {
+  // Get the color based on active state and disabled state
+  const textColorClass = disabled 
+    ? (theme.name === 'dark' ? 'text-gray-600' : 'text-gray-400')
+    : (active ? theme.activeNavItemText : theme.navItemText);
+  
+  const handleClick = () => {
+    if (!disabled && onClick) {
+      onClick();
+    }
+  };
   
   return (
     <div 
-      className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} px-3 py-2 rounded-lg cursor-pointer ${
-        active ? theme.activeNavItem : theme.navItem
+      className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-3'} px-3 py-2 rounded-lg ${
+        disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+      } ${
+        active && !disabled ? theme.activeNavItem : theme.navItem
       }`}
-      onClick={onClick}
-      title={isCollapsed ? text : ''}
+      onClick={handleClick}
+      title={isCollapsed ? text : (disabled ? `${text} (Admin Only)` : '')}
     >
       {/* Clone the icon element and pass the appropriate color */}
       {React.cloneElement(icon, { 
         className: textColorClass,
-        color: active ? (theme.name === 'dark' ? 'black' : 'white') : (theme.name === 'dark' ? '#9CA3AF' : '#4B5563')
+        color: disabled 
+          ? (theme.name === 'dark' ? '#4B5563' : '#9CA3AF')
+          : (active ? (theme.name === 'dark' ? 'black' : 'white') : (theme.name === 'dark' ? '#9CA3AF' : '#4B5563'))
       })}
-      {!isCollapsed && <span className={textColorClass}>{text}</span>}
+      {!isCollapsed && (
+        <span className={textColorClass}>
+          {text}
+          {disabled && (
+            <span className="text-xs ml-1 opacity-70"></span>
+          )}
+        </span>
+      )}
     </div>
   );
 };
+
+
 
 // SubNavItem component
 const SubNavItem = ({ text, theme, onClick, isCollapsed }) => (
@@ -431,48 +453,74 @@ const renderRecurringContent = () => {
   const handleLogout = useCallback(() => {
     setActiveNavItem('Logout');
   }, []);
-// UPDATED: Render the appropriate content based on the active nav item
-const renderContent = () => {
-  switch (activeNavItem) {
-    case 'Home':
-      return renderHomeContent(); 
-    case 'New Task':
-      return <NewTask theme={theme} />;
-    case 'Task Flow':
-      return <TaskFlowContent theme={theme} />;
-    case 'Dashboard':
-      return <DashboardContent theme={theme} />;
-    case 'Perfect ⭐':
-      return <PerfectContent theme={theme} />;
-    case 'Settings':
-      return <SettingsContent theme={theme} />;
-    case 'Change Password':
-      return <PasswordContent theme={theme} />;
-    case 'Tech Support':
-      return <SupportContent theme={theme} />;
-    case 'Logout':
-      return (
-        <LogoutContent 
-          theme={theme} 
-          onConfirm={() => {
-            // Clear user authentication data
-            localStorage.removeItem('user');
-            // Navigate to login page
-            navigate('/login');
-          }}
-          onCancel={() => {
-            // Return to home page
-            setActiveNavItem('Home');
-          }}
-        />
-      );
-      
-    case 'reoccur':
-      return renderRecurringContent(); // FIXED: Now passes sidebarCollapsed prop correctly
-    default:
-      return <HomeContent theme={theme} />;
-  }
-};
+  const renderContent = () => {
+    switch (activeNavItem) {
+      case 'Home':
+        return renderHomeContent(); 
+      case 'New Task':
+        // Only allow New Task access for SuperAdmin
+        if (userRole === 'SuperAdmin') {
+          return <NewTask theme={theme} />;
+        } else {
+          // Show access denied message for non-SuperAdmin users
+          return (
+            <div className={`p-6 ${theme.text} text-center`}>
+              <div className={`p-8 rounded-lg ${theme.cardBg} max-w-md mx-auto`}>
+                <div className="mb-4">
+                  <CirclePlus size={48} className="mx-auto text-gray-400" />
+                </div>
+                <h2 className="text-xl font-bold mb-2">Access Restricted</h2>
+                <p className="mb-4 text-gray-600">
+                  Only SuperAdmin users can create new tasks.
+                </p>
+                <p className="text-sm text-gray-500">
+                  Current Role: {userRole}
+                </p>
+                <button 
+                  className={`mt-4 px-4 py-2 rounded ${theme.buttonBg} text-white`}
+                  onClick={() => setActiveNavItem('Home')}
+                >
+                  Go to Home
+                </button>
+              </div>
+            </div>
+          );
+        }
+      case 'Task Flow':
+        return <TaskFlowContent theme={theme} />;
+      case 'Dashboard':
+        return <DashboardContent theme={theme} />;
+      case 'Perfect ⭐':
+        return <PerfectContent theme={theme} />;
+      case 'Settings':
+        return <SettingsContent theme={theme} />;
+      case 'Change Password':
+        return <PasswordContent theme={theme} />;
+      case 'Tech Support':
+        return <SupportContent theme={theme} />;
+      case 'Logout':
+        return (
+          <LogoutContent 
+            theme={theme} 
+            onConfirm={() => {
+              // Clear user authentication data
+              localStorage.removeItem('user');
+              // Navigate to login page
+              navigate('/login');
+            }}
+            onCancel={() => {
+              // Return to home page
+              setActiveNavItem('Home');
+            }}
+          />
+        );
+        
+      case 'reoccur':
+        return renderRecurringContent();
+      default:
+        return <HomeContent theme={theme} />;
+    }
+  };
 
   return (
     <div className={`flex h-screen ${currentTheme.background}`}>
@@ -597,16 +645,31 @@ const renderContent = () => {
               onClick={() => handleNavItemClick('reoccur')}
               isCollapsed={sidebarCollapsed}
             />
+
+{/* ADD THE NEW TASK VALIDATION ITEM HERE */}
+<NavItem 
+  icon={<Search size={20} />} 
+  text="Task Validation" 
+  theme={currentTheme} 
+  active={activeNavItem === 'Task Validation'}
+  onClick={() => handleNavItemClick('Task Validation')}
+  isCollapsed={sidebarCollapsed}
+/>
+
+
+
             <div className={`my-5 border-0 border-b-1 border-line ${currentTheme.name === 'dark' ? 'border-gray-500' : 'border-gray-400'} mx-2`}></div>
 
-            <NavItem 
-              icon={<CirclePlus size={20} />} 
-              text="New Task" 
-              theme={currentTheme} 
-              active={activeNavItem === 'New Task'}
-              onClick={() => handleNavItemClick('New Task')}
-              isCollapsed={sidebarCollapsed}
-            />
+            
+<NavItem 
+  icon={<CirclePlus size={20} />} 
+  text="New Task" 
+  theme={currentTheme} 
+  active={activeNavItem === 'New Task'}
+  onClick={() => handleNavItemClick('New Task')}
+  isCollapsed={sidebarCollapsed}
+  disabled={userRole !== 'SuperAdmin'} // Disable if not SuperAdmin
+/>
             <NavItem 
               icon={<Workflow size={20} />} 
               text="Task Flow" 
