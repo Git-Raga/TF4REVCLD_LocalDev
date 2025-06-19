@@ -3,6 +3,7 @@ import { useTheme } from './ColorChange';
 import NewTask from './NewTask'
 import TaskHomeUser from './TaskHomeUser';
 import TaskHomeAdmin from './TaskHomeAdmin';
+import TaskValidation from './TaskValidation'; // Add this import
 import { 
   Home, 
   Grid, 
@@ -23,7 +24,7 @@ import {
   ChevronRight,
   CalendarSync,
   Menu,
-  CheckCheck,Search
+  CheckCheck,Search, Microscope
 } from 'lucide-react';
 import FontConfig from './FontConfig';
 import { useNavigate } from 'react-router-dom';
@@ -515,11 +516,13 @@ const renderRecurringContent = () => {
           />
         );
         
-      case 'reoccur':
-        return renderRecurringContent();
-      default:
-        return <HomeContent theme={theme} />;
-    }
+        case 'reoccur':
+          return renderRecurringContent();
+        case 'Task Validation':  // ADD THIS CASE
+          return <TaskValidation theme={theme} sidebarCollapsed={sidebarCollapsed} />;
+        default:
+          return <HomeContent theme={theme} />;
+      }
   };
 
   return (
@@ -648,8 +651,8 @@ const renderRecurringContent = () => {
 
 {/* ADD THE NEW TASK VALIDATION ITEM HERE */}
 <NavItem 
-  icon={<Search size={20} />} 
-  text="Task Validation" 
+  icon={<Microscope size={20} />} 
+  text="Validation" 
   theme={currentTheme} 
   active={activeNavItem === 'Task Validation'}
   onClick={() => handleNavItemClick('Task Validation')}

@@ -6,6 +6,7 @@ import { useTheme } from "./ColorChange";
 import { getSortedAndFilteredTasks, calculateTaskStats } from "./SortingLogic";
 import TableDisplay from "./TableDisplay";
 import TaskFiltersnStats from "./TaskFiltersnStats";
+import AllTasks from "./AllTasks"; // Import the new AllTasks component
 import { DeleteConfirmationModal, CommentsModal } from "./ModelOps";
 import { OneTimeTaskEditModal } from "./OneTimeTaskEdit";
 import taskCacheService from "./TaskCacheService"; // Import cache service
@@ -73,26 +74,27 @@ const TaskHomeAdmin = () => {
     fetchTasks();
   }, []);
 
-  // UPDATED: Toggle task completion with cache update
-  const toggleTaskCompletion = async (taskId, currentCompletionStatus) => {
+  // UPDATED: Toggle task completion with cache update - now updates userdone and taskcompleted
+  const toggleTaskCompletion = async (taskId, currentTask) => {
     try {
       // Set animating state for task
       setAnimatingTaskId(taskId);
 
-      // Update the task in the database
+      // Update the task in the database - set userdone=true and taskcompleted=false
       await databases.updateDocument(
         DATABASE_ID,
         COLLECTIONS.TASK_DETAILS,
         taskId,
         {
-          taskcompleted: !currentCompletionStatus,
+          userdone: true,
+          taskcompleted: false,
         }
       );
 
       // Update the local state
       const updatedTasks = tasks.map((task) =>
         task.$id === taskId
-          ? { ...task, taskcompleted: !currentCompletionStatus }
+          ? { ...task, userdone: true, taskcompleted: false }
           : task
       );
       setTasks(updatedTasks);
@@ -288,13 +290,14 @@ const TaskHomeAdmin = () => {
   };
 
   // Determine urgency badge color and text
-  const getUrgencyBadge = (urgency, dueDate, isCompleted) => {
+  const getUrgencyBadge = (urgency, dueDate, task) => {
     let bgColor,
       text,
       flashingClass = "";
 
-    // If task is completed, don't show flashing and use muted colors
-    if (isCompleted) {
+    // Handle different task states
+    if (task.taskcompleted) {
+      // Completed tasks - muted appearance
       bgColor = "bg-gray-500";
       text = urgency === "Critical" ? "CRITICAL" : "NORMAL";
       return (
@@ -306,18 +309,30 @@ const TaskHomeAdmin = () => {
       );
     }
 
+    if (task.userdone) {
+      // User done tasks - slightly muted but still visible
+      bgColor = urgency === "Critical" ? "bg-blue-500" : "bg-blue-400";
+      text = urgency === "Critical" ? "CRITICAL-DONE" : "NORMAL-DONE";
+      return (
+        <div
+          className={`${bgColor} text-white px-3 py-1 rounded text-xs font-bold inline-block text-center w-25 opacity-80`}
+        >
+          {text}
+        </div>
+      );
+    }
+
+    // Active tasks - full intensity
     // Check if task is late
     const isLate =
       dueDate &&
       new Date() > new Date(dueDate) &&
       new Date(dueDate).toDateString() !== new Date().toDateString();
 
-    // In your getUrgencyBadge function
     if (urgency === "Critical" && isLate) {
       bgColor = "bg-red-700"; // Darker, more intense red
       text = "CRITICAL-LATE";
       
-      // Instead of using a class
       return (
         <div
           className={`${bgColor} text-white px-3 py-1 rounded text-xs inline-block text-center w-25`}
@@ -375,8 +390,8 @@ const TaskHomeAdmin = () => {
     );
   };
 
-  // Determine task row color based on theme
-  const getRowClass = (index, isCompleted) => {
+  // Determine task row color based on theme and task state
+  const getRowClass = (index, task) => {
     // For dark theme, use slightly different shades to distinguish rows
     const evenRow =
       currentTheme.name === "dark" ? "bg-gray-800" : "bg-gray-200";
@@ -384,10 +399,18 @@ const TaskHomeAdmin = () => {
 
     const baseClass = index % 2 === 0 ? evenRow : oddRow;
 
-    // Add disabled styling for completed tasks
-    const completedClass = isCompleted ? "opacity-30" : "";
+    // Add different styling based on task state
+    let stateClass = "";
+    if (task.taskcompleted) {
+      // Completed tasks - most disabled appearance
+      stateClass = "opacity-30 bg-grey-500 dark:bg-green-700";
+    } else if (task.userdone) {
+      // User done tasks - partially disabled appearance
+      stateClass = "opacity-60 bg-blue-50 dark:bg-blue-900";
+    }
+    // Active tasks use default styling (no additional class)
 
-    return `${baseClass} ${completedClass} hover:bg-opacity-90 transition duration-150 ease-in-out`;
+    return `${baseClass} ${stateClass} hover:bg-opacity-90 transition duration-150 ease-in-out`;
   };
 
   // Use the imported function for sorting and filtering tasks
@@ -396,6 +419,10 @@ const TaskHomeAdmin = () => {
     showActiveOnly,
     sortState
   );
+
+  // Determine if we're showing sectioned view (all tasks) or flat view (active only)
+  const isSectionedView = !showActiveOnly && sortedAndFilteredTasks.sections;
+  const flatTaskList = isSectionedView ? [] : sortedAndFilteredTasks;
 
   // Use the imported function to calculate task statistics
   const taskStats = calculateTaskStats(tasks);
@@ -416,7 +443,7 @@ const TaskHomeAdmin = () => {
 
   return (
     <div className="overflow-x-auto">
-      <div className="relative max-w-full mx-auto">
+      <div className="relative max-w-full mx-auto space-y-6">
 {/*          
         {process.env.NODE_ENV === 'development' && (
           <div className="mb-2 p-2 bg-blue-100 text-blue-800 text-xs rounded">
@@ -430,34 +457,60 @@ const TaskHomeAdmin = () => {
           </div> */}
          
 
-        {/* Use TableDisplay component */}
-        <TableDisplay
-          currentTheme={currentTheme}
-          sortedAndFilteredTasks={sortedAndFilteredTasks}
-          sortState={sortState}
-          handleDueDateClick={handleDueDateClick}
-          setSortState={setSortState}
-          animatingTaskId={animatingTaskId}
-          toggleTaskCompletion={toggleTaskCompletion}
-          openEditModal={openEditModal}
-          openDeleteModal={openDeleteModal}
-          openCommentsModal={openCommentsModal}
-          getInitialsBadge={getInitialsBadge}
-          getUrgencyBadge={getUrgencyBadge}
-          getDueDateBadge={getDueDateBadge}
-          getTaskAgeBadge={getTaskAgeBadge}
-          getRowClass={getRowClass}
-          showActiveOnly={showActiveOnly} // Pass the showActiveOnly state to TableDisplay
-          pageTitle="One Time ☝ Task Details"
-        />
-
-        {/* Use TaskFiltersnStats component */}
-        <TaskFiltersnStats
-          currentTheme={currentTheme}
-          showActiveOnly={showActiveOnly}
-          setShowActiveOnly={setShowActiveOnly}
-          taskStats={taskStats}
-        />
+        {/* Use TableDisplay component for Active Tasks or AllTasks component for All Tasks */}
+        {isSectionedView ? (
+          // All Tasks view with sections
+          <AllTasks
+            currentTheme={currentTheme}
+            sortedAndFilteredTasks={sortedAndFilteredTasks}
+            sortState={sortState}
+            handleDueDateClick={handleDueDateClick}
+            animatingTaskId={animatingTaskId}
+            toggleTaskCompletion={toggleTaskCompletion}
+            openEditModal={openEditModal}
+            openDeleteModal={openDeleteModal}
+            openCommentsModal={openCommentsModal}
+            getInitialsBadge={getInitialsBadge}
+            getUrgencyBadge={getUrgencyBadge}
+            getDueDateBadge={getDueDateBadge}
+            getTaskAgeBadge={getTaskAgeBadge}
+            getRowClass={getRowClass}
+            showActiveOnly={showActiveOnly}
+            setShowActiveOnly={setShowActiveOnly}
+            taskStats={taskStats}
+          />
+        ) : (
+          // Active Tasks view with original TableDisplay
+          <>
+            <TableDisplay
+              currentTheme={currentTheme}
+              sortedAndFilteredTasks={flatTaskList}
+              sortState={sortState}
+              handleDueDateClick={handleDueDateClick}
+              setSortState={setSortState}
+              animatingTaskId={animatingTaskId}
+              toggleTaskCompletion={toggleTaskCompletion}
+              openEditModal={openEditModal}
+              openDeleteModal={openDeleteModal}
+              openCommentsModal={openCommentsModal}
+              getInitialsBadge={getInitialsBadge}
+              getUrgencyBadge={getUrgencyBadge}
+              getDueDateBadge={getDueDateBadge}
+              getTaskAgeBadge={getTaskAgeBadge}
+              getRowClass={getRowClass}
+              showActiveOnly={showActiveOnly}
+              pageTitle="One Time ☝ Task Details"
+            />
+            
+            {/* TaskFiltersnStats component for Active Tasks view */}
+            <TaskFiltersnStats
+              currentTheme={currentTheme}
+              showActiveOnly={showActiveOnly}
+              setShowActiveOnly={setShowActiveOnly}
+              taskStats={taskStats}
+            />
+          </>
+        )}
 
         {/* Modals - now using components from ModelOps.jsx */}
         <DeleteConfirmationModal

@@ -1,4 +1,4 @@
-// TaskFilters.jsx
+// TaskFiltersnStats.jsx
 import React from "react";
 import {
   CheckCircle,
@@ -14,53 +14,38 @@ const TaskFiltersnStats = ({
   taskStats 
 }) => {
   return (
-    <div
-      className={`p-4 ${
-        currentTheme.name === "dark"
-          ? "bg-gray-800 border-t border-gray-700"
-          : "bg-gray-100 border-t border-gray-300"
-      }`}
-    >
-      <div className="flex justify-between items-center">
-        {/* Task Filters - Left Side */}
+    <div className={`${currentTheme.name === "dark" ? "bg-gray-800 border-gray-600" : "bg-white border-gray-300"} border rounded-lg p-4 mt-4`}>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        {/* Toggle Buttons - Radio Style */}
         <div className="flex items-center space-x-6">
-          <div className="flex items-center space-x-2">
+          <label className="flex items-center space-x-2 cursor-pointer">
             <input
               type="radio"
-              id="active-tasks"
-              name="task-filter"
+              name="taskView"
               checked={showActiveOnly}
               onChange={() => setShowActiveOnly(true)}
-              className="h-4 w-4 text-blue-600 cursor-pointer"
+              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
             />
-            <label
-              htmlFor="active-tasks"
-              className={`${currentTheme.text} text-sm font-medium cursor-pointer`}
-            >
+            <span className={`text-sm font-medium ${currentTheme.name === "dark" ? "text-white" : "text-gray-900"}`}>
               Active Tasks
-            </label>
-          </div>
-
-          <div className="flex items-center space-x-2">
+            </span>
+          </label>
+          <label className="flex items-center space-x-2 cursor-pointer">
             <input
               type="radio"
-              id="all-tasks"
-              name="task-filter"
+              name="taskView"
               checked={!showActiveOnly}
               onChange={() => setShowActiveOnly(false)}
-              className="h-4 w-4 text-blue-600 cursor-pointer"
+              className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600"
             />
-            <label
-              htmlFor="all-tasks"
-              className={`${currentTheme.text} text-sm font-medium cursor-pointer`}
-            >
+            <span className={`text-sm font-medium ${currentTheme.name === "dark" ? "text-white" : "text-gray-900"}`}>
               All Tasks
-            </label>
-          </div>
+            </span>
+          </label>
         </div>
 
         {/* Task Statistics - Right Side */}
-        <div className="flex flex-wrap items-center space-x-4">
+        <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center space-x-2 text-sm">
             <ListTodo
               size={18}
@@ -70,7 +55,7 @@ const TaskFiltersnStats = ({
                   : "text-blue-600"
               }
             />
-            <span className={`${currentTheme.text} font-bold`}>
+            <span className={`${currentTheme.name === "dark" ? "text-white" : "text-gray-900"}`}>
               Total: <strong>{taskStats.total}</strong>
             </span>
           </div>
@@ -84,7 +69,7 @@ const TaskFiltersnStats = ({
                   : "text-green-600"
               }
             />
-            <span className={`${currentTheme.text} font-bold`}>
+            <span className={`${currentTheme.name === "dark" ? "text-white" : "text-gray-900"}`}>
               Completed: <strong>{taskStats.completed}</strong>
             </span>
           </div>
@@ -98,14 +83,14 @@ const TaskFiltersnStats = ({
                   : "text-amber-600"
               }
             />
-            <span className={`${currentTheme.text} font-bold`}>
+            <span className={`${currentTheme.name === "dark" ? "text-white" : "text-gray-900"}`}>
               Open: <strong>{taskStats.open}</strong>
             </span>
           </div>
 
           <div className="flex items-center space-x-2 text-sm">
             <Clock size={18} className="text-red-500" />
-            <span className={`${currentTheme.text} font-bold`}>
+            <span className={`${currentTheme.name === "dark" ? "text-white" : "text-gray-900"}`}>
               Overdue: <strong>{taskStats.overdue}</strong>
             </span>
           </div>

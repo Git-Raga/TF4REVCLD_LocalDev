@@ -58,7 +58,7 @@ const TableDisplay = ({
         </colgroup>
         <thead>
           <tr className={headerClass}>
-            <th className="p-3 text-right w-20 whitespace-nowrap">
+            <th className="p-2 text-right w-20 whitespace-nowrap">
               <div className="flex items-center ml-3 space-x-2">
                 <span>Urgency 🔥</span>
               </div>
@@ -117,7 +117,7 @@ const TableDisplay = ({
       {/* Scrollable Body */}
       <div
         className="overflow-y-auto"
-        style={{ maxHeight: "calc(100vh - 250px)" }}
+        style={{ maxHeight: "calc(100vh - 273px)" }}
       >
         <table
           className={`w-full table-fixed ${
