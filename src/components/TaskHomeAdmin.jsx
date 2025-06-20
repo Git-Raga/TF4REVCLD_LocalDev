@@ -75,43 +75,64 @@ const TaskHomeAdmin = () => {
   }, []);
 
   // UPDATED: Toggle task completion with cache update - now updates userdone and taskcompleted
-  const toggleTaskCompletion = async (taskId, currentTask) => {
-    try {
-      // Set animating state for task
-      setAnimatingTaskId(taskId);
+// UPDATED: Toggle task completion with cache update - handles different task states
+const toggleTaskCompletion = async (taskId, currentTask) => {
+  try {
+    // Set animating state for task
+    setAnimatingTaskId(taskId);
 
-      // Update the task in the database - set userdone=true and taskcompleted=false
-      await databases.updateDocument(
-        DATABASE_ID,
-        COLLECTIONS.TASK_DETAILS,
-        taskId,
-        {
-          userdone: true,
-          taskcompleted: false,
-        }
-      );
+    let updateData;
 
-      // Update the local state
-      const updatedTasks = tasks.map((task) =>
-        task.$id === taskId
-          ? { ...task, userdone: true, taskcompleted: false }
-          : task
-      );
-      setTasks(updatedTasks);
-
-      // Update cache with the modified task
-      const updatedTask = updatedTasks.find(task => task.$id === taskId);
-      taskCacheService.updateTaskInCache('onetime', updatedTask);
-
-      // Wait for animation to complete before clearing animating state
-      setTimeout(() => {
-        setAnimatingTaskId(null);
-      }, 500);
-    } catch (err) {
-      console.error("Error toggling task completion:", err);
-      setAnimatingTaskId(null);
+    // Determine what to update based on current task state
+    if (currentTask.userdone && !currentTask.taskcompleted) {
+      // Task is in "Tasks Awaiting Review" - move back to Active
+      updateData = {
+        userdone: false,
+        taskcompleted: false,
+      };
+    } else if (!currentTask.userdone && !currentTask.taskcompleted) {
+      // Task is Active - move to "Tasks Awaiting Review"
+      updateData = {
+        userdone: true,
+        taskcompleted: false,
+      };
+    } else {
+      // Task is completed - this shouldn't happen, but handle gracefully
+      updateData = {
+        userdone: false,
+        taskcompleted: false,
+      };
     }
-  };
+
+    // Update the task in the database
+    await databases.updateDocument(
+      DATABASE_ID,
+      COLLECTIONS.TASK_DETAILS,
+      taskId,
+      updateData
+    );
+
+    // Update the local state
+    const updatedTasks = tasks.map((task) =>
+      task.$id === taskId
+        ? { ...task, ...updateData }
+        : task
+    );
+    setTasks(updatedTasks);
+
+    // Update cache with the modified task
+    const updatedTask = updatedTasks.find(task => task.$id === taskId);
+    taskCacheService.updateTaskInCache('onetime', updatedTask);
+
+    // Wait for animation to complete before clearing animating state
+    setTimeout(() => {
+      setAnimatingTaskId(null);
+    }, 500);
+  } catch (err) {
+    console.error("Error toggling task completion:", err);
+    setAnimatingTaskId(null);
+  }
+};
 
   // UPDATED: Handle task deletion with cache update
   const handleDeleteTask = async () => {

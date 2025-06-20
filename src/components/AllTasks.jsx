@@ -427,6 +427,14 @@ const AllTasks = ({
               </span>
             </div>
 
+            {/* Overdue */}
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+              <span className={`text-sm font-medium ${currentTheme.name === "dark" ? "text-white" : "text-gray-900"}`}>
+                Overdue: {taskStats.overdue}
+              </span>
+            </div>
+
             {/* Total */}
             <div className="flex items-center space-x-2">
               <span className={`text-sm font-bold ${currentTheme.name === "dark" ? "text-white" : "text-gray-900"}`}>

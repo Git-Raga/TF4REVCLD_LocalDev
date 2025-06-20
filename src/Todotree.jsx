@@ -7,21 +7,17 @@
 
 
 
-TODO // task completion -> to pending- toggle from pending to active - to start wit this
-
  
  TODO // Logic to Done to Complete section 
+// to task owner edit is not updating the email ID
 
-
-
+// edit and delete optiont to remove for non admin
         // UI of Task Validation - frame in back theme
         // Allignement of table headers placement
         // Big BUtton for Approve/Redo and 5STAR (Icons)
         // tick = task done logic change 
         // include chace in task validation
-        // tick should make it disappear - remove from listing
-        // bottom validation task to change in One time to include the pending approval
-        // bottom validation task to change in weekly & monthly recuring include the pending approval
+    
         
         
         

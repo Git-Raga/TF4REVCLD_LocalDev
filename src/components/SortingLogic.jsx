@@ -54,8 +54,8 @@ const sortTasksWithinSection = (a, b, sortState) => {
   if (sortState === "asc" || sortState === "desc") {
     // Handle cases where one or both tasks don't have due dates
     if (!a.taskduedate && !b.taskduedate) {
-      // If no due dates, sort by creation date (newest first)
-      return new Date(b.$createdAt) - new Date(a.$createdAt);
+      // If no due dates, sort by creation date (oldest first)
+      return new Date(a.$createdAt) - new Date(b.$createdAt);
     }
     if (!a.taskduedate) return 1; // b comes first
     if (!b.taskduedate) return -1; // a comes first
@@ -102,9 +102,9 @@ const sortTasksWithinSection = (a, b, sortState) => {
   if (aIsCritical && a.taskduedate) return -1;
   if (bIsCritical && b.taskduedate) return 1;
 
-  // 4. Critical task without Due date
+  // 4. Critical task without Due date (oldest first)
   if (aIsCritical && !a.taskduedate && bIsCritical && !b.taskduedate) {
-    return new Date(b.$createdAt) - new Date(a.$createdAt);
+    return new Date(a.$createdAt) - new Date(b.$createdAt);
   }
   if (aIsCritical && !a.taskduedate) return -1;
   if (bIsCritical && !b.taskduedate) return 1;
@@ -116,13 +116,13 @@ const sortTasksWithinSection = (a, b, sortState) => {
   if (!aIsCritical && a.taskduedate) return -1;
   if (!bIsCritical && b.taskduedate) return 1;
 
-  // 6. Normal Tasks (without due dates)
+  // 6. Normal Tasks (without due dates) - oldest first
   if (!aIsCritical && !a.taskduedate && !bIsCritical && !b.taskduedate) {
-    return new Date(b.$createdAt) - new Date(a.$createdAt);
+    return new Date(a.$createdAt) - new Date(b.$createdAt);
   }
 
-  // If we've made it here, sort by creation date (newest first)
-  return new Date(b.$createdAt) - new Date(a.$createdAt);
+  // If we've made it here, sort by creation date (oldest first)
+  return new Date(a.$createdAt) - new Date(b.$createdAt);
 };
 
 // Helper function to calculate task statistics
@@ -136,6 +136,16 @@ export const calculateTaskStats = (tasks) => {
     overdue: tasks.filter((task) => {
       const dueDate = task.taskduedate ? new Date(task.taskduedate) : null;
       return (
+        !task.taskcompleted &&
+        dueDate &&
+        new Date() > dueDate &&
+        dueDate.toDateString() !== new Date().toDateString()
+      );
+    }).length,
+    activeOverdue: tasks.filter((task) => {
+      const dueDate = task.taskduedate ? new Date(task.taskduedate) : null;
+      return (
+        !task.userdone && // Only active tasks
         !task.taskcompleted &&
         dueDate &&
         new Date() > dueDate &&
