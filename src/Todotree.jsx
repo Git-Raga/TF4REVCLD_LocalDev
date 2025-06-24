@@ -9,9 +9,19 @@
 
  
  TODO // Logic to Done to Complete section 
-// to task owner edit is not updating the email ID
 
+// fix the UI of task validation - black theme- notes 
+ // moving the headers to right and having big- wide- action section with buttons - 5 start flower animation
+
+
+ // to task owner edit is not updating the email ID
 // edit and delete optiont to remove for non admin
+// perfect 5 - to bring it up
+
+
+
+// check why recurring tasks should not show up
+
         // UI of Task Validation - frame in back theme
         // Allignement of table headers placement
         // Big BUtton for Approve/Redo and 5STAR (Icons)
