@@ -314,7 +314,7 @@ const SectionHeader = ({ frequency, tasks, sectionTitle }) => {
         )}
         
         {/* Task details */}
-        <td className="p-2 pl-10 truncate">
+        <td className="p-2 pl-10 ">
           <p
             className={`${currentTheme.text} transition-all duration-300 ${
               task.recurringdone ? "line-through opacity-60 text-gray-500" : ""

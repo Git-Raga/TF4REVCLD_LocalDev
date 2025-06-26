@@ -10,7 +10,9 @@
  
  TODO // Logic to Done to Complete section 
 
-// fix the UI of task validation - black theme- notes 
+ 
+ 
+  
  // moving the headers to right and having big- wide- action section with buttons - 5 start flower animation
 
 

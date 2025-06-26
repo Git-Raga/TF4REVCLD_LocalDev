@@ -178,7 +178,7 @@ const TableDisplay = ({
                     </td>
 
                     {/* Task Details */}
-                    <td className="p-2 pl-10 truncate">
+                    <td className="p-2 pl-10 ">
                       <p
                         className={`${currentTheme.text}  ${
                           task.taskcompleted ? "line-through" : ""
